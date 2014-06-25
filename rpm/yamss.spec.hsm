@@ -1,0 +1,89 @@
+Summary: INFN GEMSS
+Name: gemss-hsm
+Version: 1.6.3
+Release: 1
+Source0: %{name}-%{version}.tar.gz
+License: GPL
+Group: CNAF
+Requires: gpfs.base >= 3.4.0-17 jdk >= 2000:1.5 TIVsm-HSM >= 6.3.1
+%description
+GEMSS stands for Grid-EnabledMass Storage System, and implements an interface between StoRM, GPFS and TSM.
+%pre
+if pidof -x yamssMonitor > /dev/null; then
+  echo Stopping GEMSS services...
+  /etc/init.d/yamssmonitor stop
+  sleep 5
+fi
+%post
+echo Starting GEMSS services...
+/etc/init.d/yamssmonitor start
+%preun
+if pidof -x yamssMonitor > /dev/null; then
+  echo Stopping GEMSS services...
+  /etc/init.d/yamssmonitor stop
+  sleep 5
+fi
+%prep
+make -C $RPM_SOURCE_DIR buildinstall
+%files
+/etc/init.d/yamssmonitor
+/etc/profile.d/yamss.csh
+/etc/profile.d/yamss.sh
+/usr/local/yamss/bin/ng
+/usr/local/yamss/bin/yamssAbortDmSession
+/usr/local/yamss/bin/yamssCleanRecalls
+/usr/local/yamss/bin/yamssCleanupDMErrorDirectory
+/usr/local/yamss/bin/yamssCommands
+/usr/local/yamss/bin/yamssDirectoryNotify
+/usr/local/yamss/bin/yamssDrainMigrations
+/usr/local/yamss/bin/yamssDrainRecalls
+/usr/local/yamss/bin/yamssDriveStat
+/usr/local/yamss/bin/yamssEnqueueRecall
+/usr/local/yamss/bin/yamssEnqueueRecallSingle
+/usr/local/yamss/bin/yamssForceScan
+/usr/local/yamss/bin/yamssGenList
+/usr/local/yamss/bin/yamssGetDmAttr
+/usr/local/yamss/bin/yamssGetStatus
+/usr/local/yamss/bin/yamssGetTapeName
+/usr/local/yamss/bin/yamssGlobalFunctions
+/usr/local/yamss/bin/yamssKillRecallDaemon
+/usr/local/yamss/bin/yamssListExpiredFiles
+/usr/local/yamss/bin/yamssListPolicy
+/usr/local/yamss/bin/yamssListRecalls
+/usr/local/yamss/bin/yamssListTapeContent
+/usr/local/yamss/bin/yamssLogger
+/usr/local/yamss/bin/yamssLs
+/usr/local/yamss/bin/yamssMakeList
+/usr/local/yamss/bin/yamssMigrateStat
+/usr/local/yamss/bin/yamssMonitor
+/usr/local/yamss/bin/yamssProcessList
+/usr/local/yamss/bin/yamssProcessMigrate
+/usr/local/yamss/bin/yamssProcessRecall
+/usr/local/yamss/bin/yamssProcessRemove
+/usr/local/yamss/bin/yamssProcessStubbify
+/usr/local/yamss/bin/yamssRecall
+/usr/local/yamss/bin/yamssRecallDaemon
+/usr/local/yamss/bin/yamssRecallStat
+/usr/local/yamss/bin/yamssRemoveDmAttr
+/usr/local/yamss/bin/yamssRemoveSingle
+/usr/local/yamss/bin/yamssRemoveWrapper
+/usr/local/yamss/bin/yamssReorderRecall
+/usr/local/yamss/bin/yamssRm
+/usr/local/yamss/bin/yamssSendReport
+/usr/local/yamss/bin/yamssSetDmAttr
+/usr/local/yamss/bin/yamssShowPoolOccupancy
+/usr/local/yamss/bin/yamssSigTermUnblock
+/usr/local/yamss/bin/yamssStartPolicy
+/usr/local/yamss/bin/yamssStatManager
+/usr/local/yamss/bin/yamssStubbify
+/usr/local/yamss/bin/yamssStubbifySingle
+/usr/local/yamss/bin/yamssUndrainMigrations
+/usr/local/yamss/bin/yamssUndrainRecalls
+/usr/local/yamss/bin/yamssUpdateDamagedFiles
+/usr/local/yamss/bin/yamssUpdateVolumesInErrorState
+/usr/local/yamss/bin/yamssWatchdog
+/usr/local/yamss/lib/db2jcc.jar
+/usr/local/yamss/lib/nailgun-0.7.1.jar
+/usr/local/yamss/lib/yamssDB2Query.class
+/usr/local/yamss/lib/yamssDB2Update.class
+/usr/local/yamss/lib/yamssPreloadStat.so

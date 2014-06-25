@@ -1,0 +1,50 @@
+#!/bin/bash
+############################################################################
+# Copyright 2008-2012 Istituto Nazionale di Fisica Nucleare
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+############################################################################
+
+mountpoint=$1
+fname=$2
+uid=$3
+gid=$4
+tmpfile=$5
+
+. /usr/local/yamss/bin/yamssCommands
+. $mountpoint/system/YAMSS_CONFIG/hsmConfig
+
+if [ ! -f $fname ]; then
+  echo "Error: file $fname does not exist"
+  # remove temporary file  
+  rm -f $tmpfile
+  exit 1
+fi
+
+# stubbify file
+if $attr -q -g storm.migrated $fname 2>/dev/null && ! $attr -q -g storm.pinned $fname 2>/dev/null; then
+  echo "Stubbifying file $fname"
+  $dsmmigrate $fname > /dev/null
+  if [ $? = 0 ]; then
+    echo "File $fname stubbified by uid $uid and gid $gid"
+  else
+    echo "Error: file $fname was not stubbified by uid $uid and gid $gid"
+  fi
+elif $attr -q -g storm.pinned $file 2>/dev/null; then
+  echo "File $file is pinned on disk and cannot be stubbified"
+else
+  echo "File $file does not appear to have been migrated to tape and cannot be stubbified"
+fi
+
+# remove temporary file  
+rm -f $tmpfile
+

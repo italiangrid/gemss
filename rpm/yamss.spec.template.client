@@ -1,0 +1,13 @@
+Summary: INFN GEMSS
+Name: gemss-client
+Version:
+Release: 1
+Source0: %{name}-%{version}.tar.gz
+License: GPL
+Group: CNAF
+Requires: gpfs.base >= 3.4.0-17
+%description
+GEMSS stands for Grid-EnabledMass Storage System, and implements an interface between StoRM, GPFS and TSM.
+%prep
+make -C $RPM_SOURCE_DIR buildinstall
+%files

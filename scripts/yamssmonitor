@@ -1,0 +1,116 @@
+#!/bin/bash
+############################################################################
+# Copyright 2008-2012 Istituto Nazionale di Fisica Nucleare
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+############################################################################
+#
+# yamssmonitor: Start/Stop YAMSS monitor process
+#
+# description: Start/Stop YAMSS monitor process 
+# chkconfig: - 95 10
+# processname: yamssMonitor
+# pidfile: /var/run/yamssmonitor.pid
+
+. /etc/rc.d/init.d/functions
+
+if [[ $# != 1 ]]
+then
+  echo $"Usage: $0 {start|stop|status|restart}"
+  exit 1
+fi
+
+prog="yamssMonitor"
+prog2="ng ng-stop"
+prefix="/usr/local/yamss/bin"
+
+if [[ ! -e $prefix/$prog ]]
+then
+   echo "$prefix/$prog not found"
+   exit 0
+fi
+
+rc=0
+
+start() {
+        echo -n "Starting $prog ... "
+
+        if [ -e /var/lock/subsys/$prog ]; then
+            if [ -n "`/sbin/pidof -x $prog`" ]; then
+                echo -n "$prog already running"
+                failure
+                echo
+                return 1
+            fi
+        fi
+
+        nohup $prefix/$prog >/dev/null 2>&1 &
+
+        sleep 1
+
+        if [ ! -n "`/sbin/pidof -x $prog`" ]; then
+                echo -n "start of $prog failed..."
+                failure
+                echo
+                return 1
+        fi
+
+        touch /var/lock/subsys/$prog
+
+        success
+
+        echo
+        return 0
+}
+
+stop() {
+        echo -n "Stopping $prog..."
+        killproc $prog
+        RETVAL=$?
+        [ -f /var/lock/subsys/$prog ] && rm -f /var/lock/subsys/$prog
+        echo
+	$prefix/$prog2 ng-stop
+        sleep 6
+        return $RETVAL  
+}
+
+rhstatus() {
+        status $prog
+        
+        RETVAL=$?
+        return $RETVAL
+}
+
+restart() {
+	stop
+	start
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  status)
+        rhstatus 1
+        ;;
+  restart)
+        restart
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|status|restart}"
+        exit 1
+esac
+
+exit $?
