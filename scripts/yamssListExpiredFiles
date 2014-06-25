@@ -1,0 +1,13 @@
+#!/bin/bash
+
+. /usr/local/yamss/bin/yamssCommands
+
+device=$1
+mountpoint=$(cat /proc/mounts | grep "^/dev/$device " | awk '{print $2}')
+
+. $mountpoint/system/YAMSS_CONFIG/hsmConfig
+
+
+$ng yamssDB2Query $TSM_SERVER $TSM_SERVER_DB_NAME $TSM_SERVER_DB_PORT $TSM_SERVER_ID $TSM_SERVER_PASSWORD "select nr.nodeid,fs.fsid,alias from $TSM_SERVER_DB_NAME.spaceman_objects as sos left join $TSM_SERVER_DB_NAME.nodes nr on (sos.nodeid=nr.nodeid) left join $TSM_SERVER_DB_NAME.filespaces fs on (sos.fsid=fs.fsid) where nr.nodename='$TSM_PROXY_NODE' and fs.fsname='$mountpoint' and state=1 and substr(hex(objinfo),38,1)='8'" | awk -v mnt=$mountpoint '{print mnt$3}'
+
+

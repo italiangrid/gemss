@@ -1,0 +1,44 @@
+#!/bin/bash
+############################################################################
+# Copyright 2008-2012 Istituto Nazionale di Fisica Nucleare
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+############################################################################
+
+. /usr/local/yamss/bin/yamssCommands
+
+if [ "$1"x != "-f"x -a "$2"x != "-f"x ]; then
+  read -p "You are going to kill yamssRecallDaemon. Are you sure? [y/n] " ans
+  if [ "$ans"x = "n"x ]; then
+     echo Aborted
+     exit 1
+  elif [ "$ans"x != "y"x ]; then
+     echo "Wrong answer, nothing to do"
+     exit 1
+  fi
+fi
+
+signal="SIGTERM"
+if [ "$1"x = "-k"x -o "$2"x = "-k"x ]; then
+  signal="SIGKILL"
+elif [ "$1"x = "-i"x -o "$2"x = "-i"x ]; then
+  signal="SIGINT"
+fi
+
+for pids in $($pidof yamssRecallDaemon); do
+  echo Sending $signal to pid $pids
+  kill -s $signal $pids
+done
+
+echo Note that process might need time to die if there are recall being served
+echo Check yamssRecallDaemon output in monitor.log
+

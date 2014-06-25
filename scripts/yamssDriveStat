@@ -1,0 +1,83 @@
+#!/bin/bash
+############################################################################
+# Copyright 2008-2012 Istituto Nazionale di Fisica Nucleare
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+############################################################################
+
+. /usr/local/yamss/bin/yamssCommands
+
+device=$1
+shift
+     
+mountpoint=$(cat /proc/mounts | grep "^/dev/$device " | awk '{print $2}')
+
+SYSTEM_DIRECTORY_PATH=$mountpoint/system
+
+if [ ! -f $mountpoint/system/YAMSS_CONFIG/hsmConfig ]; then
+  echo "Error: missing hsmConfig file in system directory"
+  exit 1
+fi
+  
+. $mountpoint/system/YAMSS_CONFIG/hsmConfig
+
+start=$1
+stop=$2
+
+if [ "$start"x = "x" ]; then
+  let start=$(date +%s)-86400
+fi
+
+if [ "$stop"x = "x" ]; then
+  stop=$(date +%s)
+fi
+
+begindate=$(date -d "1970-01-01 $start sec utc" +"%m/%d/%Y")
+begintime=$(date -d "1970-01-01 $start sec utc" +"%H:%M:%S")
+
+enddate=$(date -d "1970-01-01 $stop sec utc" +"%m/%d/%Y")
+endtime=$(date -d "1970-01-01 $stop sec utc" +"%H:%M:%S")
+
+hname=$(hostname)
+
+srv=$($dsmadmc -id=$TSM_ID -passw=$TSM_PASSWORD -tabdelimited "q server" 2>&1 | tr "\t" " " | grep " $hname " | awk '{print $1}')
+
+if [ "$srv"x = "x" ]; then
+  exit
+fi
+
+tmpfile=$(mktemp /tmp/mdstat.XXXXXX)
+
+$dsmadmc -id=$TSM_ID -passw=$TSM_PASSWORD -tabdelimited "q actlog begindate=$begindate begintime=$begintime enddate=$enddate endtime=$endtime" >$tmpfile 2>&1 
+
+cat $tmpfile | egrep "ANR8468I|ANR8337I" | egrep -v "ANR8468I ECARTRIDGE|ANR8337I ECARTRIDGE" | awk '{print $1,$2,$7 $11,$10,$14}' | tr ")" " " | while read -r myline; do
+   server=$(echo $myline | awk '{print $3}')
+   if [ "$srv"x != "$server"x ]; then
+      continue;
+   fi
+
+   date=$(echo $myline | awk '{print $1,$2}')
+   opty=$(echo $myline | awk '{print $4}')
+   tape=$(echo $myline | awk '{print $5}')
+   drive=$(echo $myline | awk '{print $6}')
+
+   utc=$(date -d "$date" +%s)
+
+   if [ "$opty"x = "mountedx" ]; then
+     echo MOUNT $utc $hname $tape $drive
+   elif [ "$opty"x = "dismountedx" ]; then
+     echo DISMOUNT $utc $hname $tape $drive
+   fi
+done
+
+rm -f $tmpfile
+

@@ -1,0 +1,305 @@
+#!/bin/bash
+############################################################################
+# Copyright 2008-2012 Istituto Nazionale di Fisica Nucleare
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+############################################################################
+
+source /etc/profile
+
+. /usr/local/yamss/bin/yamssCommands
+. /usr/local/yamss/bin/yamssGlobalFunctions
+
+
+firstrun=1
+let hbnum=1
+
+while [ 1 ]; do
+
+# start of workaround for memory leak in read builtin (execute in daughter shell)
+(
+
+  # get existing filesystems from /etc/fstab
+  cat /etc/fstab | while read -r myline; do
+    dev=$(echo "$myline" | awk '{print $1}')
+    devf=$(echo "$dev" | cut -c1)
+    mntpoint=$(echo "$myline" | awk '{print $2}')
+    fstype=$(echo "$myline" | awk '{print $3}')
+    devmm=$(ls -l "$dev" 2>/dev/null | tr "," " " | awk '{printf "%x%x\n",$5,$6}')
+
+    # line is commented
+    if [ "$devf"x = "#"x -o "$fstype"x != "gpfs"x ]; then
+      continue
+    fi
+    devname=$(echo $dev|cut -d/ -f3)
+    
+    # cannot determine major and minor number for gpfs device
+    if [ "$devmm"x = "x" ]; then
+      continue
+    fi
+
+    # check if filesystem is managed by gemss
+    if mountpoint -q $mntpoint; then
+      if [ ! -f $mntpoint/system/YAMSS_CONFIG/hsmConfig ]; then
+        continue
+      fi
+    fi
+
+    # yamssRecallDaemon must start also before the filesystem is mounted
+    let nrun=0
+    for pids in $($pidof yamssRecallDaemon); do
+      papid=$(egrep "^PPid:" /proc/$pids/status | awk '{print $2}')
+      if [ "$papid"x != "1x" ]; then
+        continue
+      fi
+      let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$mntpoint$" | wc -l)
+    done
+    if [ "$nrun"x = "0x" ]; then
+      # proceed only if dmapi is enabled for this filesystem
+      dmen=$($mmlsfs $devname -z 2>/dev/null)
+      rc=$?
+      if [ "$rc"x = "0x" ]; then
+        isdmenabled=$(echo $dmen | sed 's/.*-z//g' | awk '{print $1}')
+        if [ "$isdmenabled"x = "yesx"  -o "$isdmenabled"x = "Yesx" ]; then
+          $yamssRecallDaemon yam$devmm $mntpoint 2>&1 | $yamssLogger $devname yamssRecallDaemon monitor.log $mntpoint &
+        fi
+      fi
+    fi
+
+  done
+
+  # loop over all mounted filesystems
+  while read -r myline; do
+     devname=$(basename -- $(echo "$myline"|awk '{print $1}'))
+     mntpoint=$(echo "$myline"|awk '{print $2}')
+     fstype=$(echo "$myline"|awk '{print $3}')
+
+     # if filesystem is not a gpfs continue
+     if [ "$fstype"x != "gpfsx" ]; then
+       continue
+     fi
+
+     # if configuration file does not exist continue
+     if [ ! -f $mntpoint/system/YAMSS_CONFIG/hsmConfig ]; then
+       continue
+     fi
+
+     # execute configuration file
+     . $mntpoint/system/YAMSS_CONFIG/hsmConfig
+
+     # give startup message (if filesystem is mounted)
+     if [ $firstrun = "1" ]; then
+        printf "$$\nProcess has started\n" | $yamssLogger $devname yamssMonitor monitor.log
+     fi
+
+     # log heartbeat
+     if [ $hbnum -eq 50 ]; then
+       # Check if drain file is present
+       if [ -f $mntpoint/system/YAMSS_DRAIN/recall.drain ]; then
+         printf "$$\nDrain file found for recalls\n" | $yamssLogger $devname yamssMonitor monitor.log
+       else
+         printf "$$\nProcess is running\n" | $yamssLogger $devname yamssMonitor monitor.log
+       fi
+     fi
+
+     # start nailgun, but log just on the first filesystem log file (should fix it for multiple filesystems)
+     let nrun=0
+     for pids in $($pidof java); do
+        let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n2 | head -n1 | egrep "com.martiansoftware.nailgun.NGServer" | wc -l)
+     done
+     if [ "$nrun"x = "0x" ]; then
+        MYPID=$$
+        (echo $MYPID; $ngserver) | $yamssLogger $devname yamssMonitor monitor.log &
+     fi 
+
+     if [ "$MODULE_SEND_REPORT"x = "yesx" ]; then
+       # start yamssSendReport process for this filesystem if not yet running
+       let nrun=0
+       for pids in $($pidof -x yamssSendReport); do
+          papid=$(egrep "^PPid:" /proc/$pids/status | awk '{print $2}')
+          if [ "$papid"x != "1x" ]; then
+            continue
+          fi
+
+          let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$devname$" | wc -l)
+       done
+       if [ "$nrun"x = "0x" ]; then
+          $yamssSendReport $devname 2>&1 | $yamssLogger $devname yamssSendReport monitor.log &
+       fi
+     fi
+
+     if [ "$MODULE_GENERATE_FILE_LIST"x = "yesx" -o "$MODULE_GENERATE_FILE_LIST"x = "pathx" ]; then
+       # start yamssGenList process for this filesystem if not yet running
+       let nrun=0
+       for pids in $($pidof -x yamssGenList); do
+          papid=$(egrep "^PPid:" /proc/$pids/status | awk '{print $2}')
+          if [ "$papid"x != "1x" ]; then
+            continue
+          fi
+
+          let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$devname$" | wc -l)
+       done
+       if [ "$nrun"x = "0x" ]; then
+          $yamssGenList $devname 2>&1 | $yamssLogger $devname yamssGenList monitor.log &
+       fi
+     fi
+
+     if [ "$MODULE_REMOVE"x = "yesx" ]; then 
+       # start yamssProcessRemove process for this filesystem if not yet running
+       let nrun=0
+       for pids in $($pidof -x yamssProcessRemove); do
+          papid=$(egrep "^PPid:" /proc/$pids/status | awk '{print $2}')
+          if [ "$papid"x != "1x" ]; then
+            continue
+          fi
+          let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$devname$" | wc -l)
+       done
+       if [ "$nrun"x = "0x" ]; then
+          $yamssProcessRemove $$ $devname 2>&1 | $yamssLogger $devname yamssProcessRemove monitor.log &
+       fi
+     fi
+
+     if [ "$MODULE_STUBBIFY"x = "yesx" ]; then
+       # start yamssProcessStubbify process for this filesystem if not yet running
+       let nrun=0
+       for pids in $($pidof -x yamssProcessStubbify); do
+          papid=$(egrep "^PPid:" /proc/$pids/status | awk '{print $2}')
+          if [ "$papid"x != "1x" ]; then
+            continue
+          fi
+          let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$devname$" | wc -l)
+       done
+       if [ "$nrun"x = "0x" ]; then
+          $yamssProcessStubbify $$ $devname 2>&1 | $yamssLogger $devname yamssProcessStubbify monitor.log &
+       fi
+     fi
+
+     if [ "$MODULE_UPDATE_DAMAGED_FILES"x = "yesx" ]; then
+       # start yamssUpdateDamagedFiles for this filesystem if not yet running
+       let nrun=0
+       for pids in $($pidof -x yamssUpdateDamagedFiles); do
+         papid=$(egrep "^PPid:" /proc/$pids/status | awk '{print $2}')
+         if [ "$papid"x != "1x" ]; then
+           continue
+         fi
+         let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$devname$" | wc -l)
+       done
+       if [ "$nrun"x = "0x" ]; then
+          $yamssUpdateDamagedFiles $$ $devname 2>&1 | $yamssLogger $devname yamssUpdateDamagedFiles monitor.log &
+       fi
+     fi
+
+     if [ "$MODULE_UPDATE_VOLUMES_IN_ERROR_STATE"x = "yesx" ]; then
+       # start yamssUpdateVolumesInErrorState for this filesystem if not yet running
+       let nrun=0
+       for pids in $($pidof -x yamssUpdateVolumesInErrorState); do
+          papid=$(egrep "^PPid:" /proc/$pids/status | awk '{print $2}')
+          if [ "$papid"x != "1x" ]; then
+            continue
+          fi
+          let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$devname$" | wc -l)
+       done
+       if [ "$nrun"x = "0x" ]; then
+          $yamssUpdateVolumesInErrorState $$ $devname 2>&1 | $yamssLogger $devname yamssUpdateVolumesInErrorState monitor.log &
+       fi
+     fi
+
+     if [ "$MODULE_STAT_MANAGER"x = "yesx" ]; then
+       # start yamssStatManager for this filesystem if not yet running
+       let nrun=0
+       for pids in $($pidof -x yamssStatManager); do
+         papid=$(egrep "^PPid:" /proc/$pids/status | awk '{print $2}')
+         if [ "$papid"x != "1x" ]; then
+           continue
+         fi
+         let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$devname$" | wc -l)
+       done
+       if [ "$nrun"x = "0x" ]; then
+         $yamssStatManager $$ $devname 2>&1 | $yamssLogger $devname yamssStatManager monitor.log &
+       fi
+     fi
+
+     # start yamssStartPolicy process for this filesystem if not yet running
+     let nrun=0
+     for pids in $($pidof -x yamssStartPolicy); do
+        papid=$(egrep "^PPid:" /proc/$pids/status | awk '{print $2}')
+        if [ "$papid"x != "1x" ]; then
+          continue
+        fi
+        let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$devname$" | wc -l)
+     done
+     if [ "$nrun"x = "0x" ]; then
+        $yamssStartPolicy $devname 2>&1 | $yamssLogger $devname yamssStartPolicy startpolicy.log &
+     fi
+
+     # Check if drain file is present
+     if [ -f $mntpoint/system/YAMSS_DRAIN/recall.drain ]; then
+       continue
+     fi
+
+     # start yamssReorderRecall process for this filesystem if not yet running
+     let nrun=0
+     for pids in $($pidof -x yamssReorderRecall); do
+        papid=$(egrep "^PPid:" /proc/$pids/status | awk '{print $2}')
+        if [ "$papid"x != "1x" ]; then
+          continue
+        fi
+        let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$devname$" | wc -l)
+     done
+     if [ "$nrun"x = "0x" ]; then
+        $yamssReorderRecall $devname 2>&1 | $yamssLogger $devname yamssReorderRecall monitor.log &
+     fi
+
+     # check if this node is within the recall node list
+     hostnam=$(hostname|cut -d. -f1)
+     isin=0
+     for nodes in $(echo $RECALL_NODE_LIST|tr "," " "|cut -d. -f1); do
+        if [ "$hostnam"x = "$nodes"x ]; then
+           isin=1
+           break
+        fi
+     done
+     if [ "$isin"x = "0x" ]; then
+        continue
+     fi
+
+     # start yamssProcessRecall processes for this filesystem if not yet running
+     let nrun=0
+     for pids in $($pidof -x yamssProcessRecall); do
+        papid=$(egrep "^PPid:" /proc/$pids/status | awk '{print $2}')
+        if [ "$papid"x != "1x" ]; then
+          continue
+        fi
+        let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$devname$" | wc -l)
+     done
+     let nrun=$nrun+1
+     for nlau in $(seq $nrun $RECALL_RUNNING_THREADS); do
+        $yamssProcessRecall $devname 2>&1 | $yamssLogger $devname yamssProcessRecall monitor.log &
+     done
+ 
+  done < /proc/mounts
+
+# end of workaround for memory leak in read builtin
+)
+
+  sleep 5
+
+  # reset first run flag
+  firstrun=0
+
+  # increase heartbeat control counter
+  let hbnum=$hbnum+1
+  if [ $hbnum -gt 50 ]; then
+    let hbnum=1
+  fi
+
+done
