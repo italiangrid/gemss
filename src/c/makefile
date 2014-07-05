@@ -2,7 +2,7 @@ MYLFOPTS=-D_LARGE_FILE_SOURCE -D_FILE_OFFSET_BITS=64
 
 MYCCOPTS=-O2 -Wall
 
-all: yamssPreloadStat.so yamssSigTermUnblock yamssRm yamssStubbify yamssRemoveWrapper yamssRecall yamssDirectoryNotify yamssGetDmAttr yamssSetDmAttr yamssRemoveDmAttr yamssAbortDmSession yamssRecallDaemon yamssShowPoolOccupancy
+all: yamssPreloadStat.so yamssSigTermUnblock yamssRm yamssStubbify yamssRemoveWrapper yamssRecall yamssDirectoryNotify yamssGetDmAttr yamssSetDmAttr yamssRemoveDmAttr yamssAbortDmSession yamssRecallDaemon yamssShowPoolOccupancy yamssFileStatus
 
 yamssPreloadStat.so: yamssPreloadStat.c
 	gcc -fPIC ${MYCCOPTS} --shared -Wl,-soname,yamssPreloadStat.so -ldl yamssPreloadStat.c -o yamssPreloadStat.so
@@ -21,6 +21,9 @@ yamssStubbify: yamssStubbify.c
 	gcc ${MYCCOPTS} -lgpfs yamssStubbify.c -o yamssStubbify
 	chown nobody:nobody yamssStubbify
 	chmod +s yamssStubbify
+
+yamssFileStatus: yamssFileStatus.c
+	gcc ${MYCCOPTS} yamssFileStatus.c -o yamssFileStatus -lgpfs
 
 yamssRemoveWrapper: yamssRemoveWrapper.c
 	gcc ${MYCCOPTS} yamssRemoveWrapper.c -o yamssRemoveWrapper 
@@ -47,20 +50,20 @@ yamssRecallDaemon: yamssRecallDaemon.c
 	gcc ${MYCCOPTS} -ldmapi yamssRecallDaemon.c -o yamssRecallDaemon -lgpfs
 
 yamssShowPoolOccupancy: yamssShowPoolOccupancy.c
-	gcc ${MYCCOPTS} -ldmapi yamssShowPoolOccupancy.c -oyamssShowPoolOccupancy -lgpfs
+	gcc ${MYCCOPTS} -ldmapi yamssShowPoolOccupancy.c -o yamssShowPoolOccupancy -lgpfs
 
 clean:
-	rm -f yamssPreloadStat.so yamssRm yamssStubbify yamssRemoveDmAttr yamssRemoveWrapper yamssRecall yamssSigTermUnblock yamssDirectoryNotify yamssGetDmAttr yamssSetDmAttr yamssAbortDmSession yamssRecallDaemon yamssShowPoolOccupancy
+	rm -f yamssPreloadStat.so yamssRm yamssStubbify yamssRemoveDmAttr yamssRemoveWrapper yamssRecall yamssSigTermUnblock yamssDirectoryNotify yamssGetDmAttr yamssSetDmAttr yamssAbortDmSession yamssRecallDaemon yamssShowPoolOccupancy yamssFileStatus
 
 install:
 	mkdir -p /usr/local/yamss/bin	
 	mkdir -p /usr/local/yamss/lib
-	cp -a yamssRecall yamssRm yamssStubbify yamssRemoveWrapper yamssRemoveDmAttr yamssSigTermUnblock yamssDirectoryNotify yamssGetDmAttr yamssSetDmAttr yamssAbortDmSession yamssRecallDaemon yamssShowPoolOccupancy /usr/local/yamss/bin
+	cp -a yamssRecall yamssRm yamssStubbify yamssRemoveWrapper yamssRemoveDmAttr yamssSigTermUnblock yamssDirectoryNotify yamssGetDmAttr yamssSetDmAttr yamssAbortDmSession yamssRecallDaemon yamssShowPoolOccupancy yamssFileStatus /usr/local/yamss/bin
 	cp -a yamssPreloadStat.so /usr/local/yamss/lib
 
 buildinstall:
 	mkdir -p /tmp/gemssbuildroot/usr/local/yamss/bin   
 	mkdir -p /tmp/gemssbuildroot/usr/local/yamss/lib
-	cp -a yamssRecall yamssRm yamssStubbify yamssRemoveWrapper yamssRemoveDmAttr yamssSigTermUnblock yamssDirectoryNotify yamssGetDmAttr yamssSetDmAttr yamssAbortDmSession yamssRecallDaemon yamssShowPoolOccupancy /tmp/gemssbuildroot/usr/local/yamss/bin
+	cp -a yamssRecall yamssRm yamssStubbify yamssRemoveWrapper yamssRemoveDmAttr yamssSigTermUnblock yamssDirectoryNotify yamssGetDmAttr yamssSetDmAttr yamssAbortDmSession yamssRecallDaemon yamssShowPoolOccupancy yamssFileStatus /tmp/gemssbuildroot/usr/local/yamss/bin
 	cp -a yamssPreloadStat.so /tmp/gemssbuildroot/usr/local/yamss/lib
 

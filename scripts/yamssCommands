@@ -27,6 +27,7 @@ yamssProcessRemove=/usr/local/yamss/bin/yamssProcessRemove
 yamssProcessStubbify=/usr/local/yamss/bin/yamssProcessStubbify
 yamssReorderRecall=/usr/local/yamss/bin/yamssReorderRecall
 yamssProcessRecall=/usr/local/yamss/bin/yamssProcessRecall
+yamssFileStatus=/usr/local/yamss/bin/yamssFileStatus
 yamssLogger=/usr/local/yamss/bin/yamssLogger
 yamssMigrateStat=/usr/local/yamss/bin/yamssMigrateStat
 yamssRecallStat=/usr/local/yamss/bin/yamssRecallStat

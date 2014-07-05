@@ -138,8 +138,9 @@ if [ "$RECALL_USE_STORM"x = "1x" -a "$numtakeover"x != "0x" ]; then
      sbss=$(ls -ls $fname|awk '{print $1,$6}')
      blks=$(echo $sbss|awk '{print $1}')
      size=$(echo $sbss|awk '{print $2}')
+     fstatus=$($yamssFileStatus $fname)
      let ress=$blks*1024
-     if [ $ress -ge $size ]; then
+     if [ "$fstatus"x = "onlinex" ]; then
         echo "Warning! A recall was ordered for file $fname but it is already on disk. Allocated size is $ress bytes while size is $size"
         continue
      fi
@@ -294,9 +295,12 @@ if [ $numrec -ne 0 ]; then
        filesize=$(ls -l $filefail | awk '{print $5}')
        # blocks of file on disk
        fileblocks=$(ls -s $filefail | awk '{print $1}')
+       # file status
+       fileStatus=$($yamssFileStatus $file)
+
        # was the recall completed?
        let ondisk=$fileblocks*1024
-       if [ $ondisk -lt $filesize ]; then
+       if [ $ondisk -lt $filesize -a "$fileStatus"x = "offlinex" ]; then
          # check if file still exists
          if [ -f $filefail ]; then 
            # check if file is migrated according to TSM
