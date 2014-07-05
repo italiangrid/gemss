@@ -346,6 +346,7 @@ void spawn_child(dm_token_t token, void *hanp, size_t hlen, char *action) {
   char inode[32];
   time_t rectime, now;
   struct stat filebuf;
+  int inode_size=512;
 
   // fork a new child
   pid = fork();
@@ -426,8 +427,8 @@ void spawn_child(dm_token_t token, void *hanp, size_t hlen, char *action) {
         exit(1);
       }
 
-      // IBMObj is not there, double-check if number of blocks on disk is OK
-      if(statp.dt_blocks>=(statp.dt_size/statp.dt_blksize)) {
+      // IBMObj is not there, double-check if number of blocks on disk is OK, but only for large enough files
+      if(statp.dt_size<=inode_size||statp.dt_blocks>=(statp.dt_size/statp.dt_blksize)) {
         // File has been recalled
         if (dm_respond_event(sid, token, DM_RESP_CONTINUE, 0, 0, NULL)) {
           fprintf(stderr, "%d: dm_respond_event failed, %d/%s\n", mypid, errno, strerror(errno));
@@ -548,7 +549,7 @@ void spawn_child(dm_token_t token, void *hanp, size_t hlen, char *action) {
         exit(1);
       }
 
-      if(Verbose&&statp.dt_blocks!=0) {
+      if(Verbose&&(statp.dt_size<inode_size||statp.dt_blocks!=0)) {
         fprintf(stderr,"%d: recalling inode %s dt_blocks %llu dt_size %lld dt_blksize %u\n", mypid, inode, statp.dt_blocks, statp.dt_size, statp.dt_blksize);
       }
 
@@ -572,7 +573,7 @@ void spawn_child(dm_token_t token, void *hanp, size_t hlen, char *action) {
       }
 
       // check if number of blocks on disk is OK and if IBMObj has been removed
-      if(statp.dt_blocks>=(statp.dt_size/statp.dt_blksize)&&ret==-1&&errno==ENOENT) {
+      if((statp.dt_size<inode_size||statp.dt_blocks>=(statp.dt_size/statp.dt_blksize))&&ret==-1&&errno==ENOENT) {
         // File has been recalled
         if (dm_respond_event(sid, token, DM_RESP_CONTINUE, 0, 0, NULL)) {
           fprintf(stderr, "%d: dm_respond_event failed, %d/%s\n", mypid, errno, strerror(errno));

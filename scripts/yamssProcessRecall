@@ -113,8 +113,12 @@ if [ "$recfile"x != "0x" ]; then
 
     let fs=$(ls -l $fn|awk '{print $5}')
     let bs=$(ls -s $fn|awk '{print $1}')*512;
+
+    # check if file is online
+    fstatus=$($yamssFileStatus $fn)
+
     # file is already on disk, skip
-    if [ $bs -ge $fs ]; then
+    if [ "$fstatus"x = "onlinex" ]; then
        continue
     elif [ "$RECALL_USE_FREE_GPFS_POOL"x = "yesx" -a $bs -eq 0 ]; then
        # place the stub file into the emptiest storage pool
@@ -218,10 +222,12 @@ if [ "$recfile"x != "0x" ]; then
      filesize=$(ls -l $file | awk '{print $5}')
      # blocks of file on disk
      fileblocks=$(ls -s $file | awk '{print $1}')
+     # file status
+     fileStatus=$($yamssFileStatus $file)
 
      # was the recall completed?
      let ondisk=$fileblocks*1024
-     if [ $ondisk -lt $filesize ]; then
+     if [ $ondisk -lt $filesize -a "$fileStatus"x = "offlinex" ]; then
         echo "File $file was not recalled. Blocks on disk give $ondisk bytes while file size is $filesize"
         rc=1
         stat=REC
