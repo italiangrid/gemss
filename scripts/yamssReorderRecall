@@ -296,7 +296,7 @@ if [ $numrec -ne 0 ]; then
        # blocks of file on disk
        fileblocks=$(ls -s $filefail | awk '{print $1}')
        # file status
-       fileStatus=$($yamssFileStatus $file)
+       fileStatus=$($yamssFileStatus $filefail)
 
        # was the recall completed?
        let ondisk=$fileblocks*1024

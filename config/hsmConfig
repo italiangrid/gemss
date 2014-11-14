@@ -1,8 +1,8 @@
 # storm node serving the file system (if any)
-STORM_BACKEND_NODE="storm-be-lhcb"
+STORM_BACKEND_NODE="xxx"
 
 # migrate node list (comma separated)
-MIGRATE_NODE_LIST="tsm-hsm-4,tsm-hsm-5"
+MIGRATE_NODE_LIST="xxx,yyy"
 
 # filesystem scan minimum frequency (in sec)
 MIGRATE_SCAN_FREQUENCY=1800
@@ -36,7 +36,7 @@ GARBAGE_COLLECTOR_LOW_THRESHOLD=96
 GARBAGE_COLLECTOR_HIGH_THRESHOLD=98
 
 # recall node list (comma separated). Warning: must contain the owner node of the filesystem
-RECALL_NODE_LIST="tsm-hsm-4,tsm-hsm-5"
+RECALL_NODE_LIST="xxx,yyy"
 
 # flag to turn on the StoRM recall interface (set to 0 if StoRM is not used)
 RECALL_USE_STORM=1
@@ -108,29 +108,29 @@ LOG_FILE_MAX_SIZE=100
 LOG_FILE_MAX_RETENTION=10
 
 # TSM dsmadmc user name
-TSM_ID="admin"
+TSM_ID="xxx"
 
 # TSM dsmadmc user password
-TSM_PASSWORD="admin"
+TSM_PASSWORD="xxx"
 
 # TSM server name
-TSM_SERVER="tsm-server"
+TSM_SERVER="xxx"
 
 # TSM server user name
-TSM_SERVER_ID="admin"
+TSM_SERVER_ID="xxx"
 
 # TSM server user passwd
-TSM_SERVER_PASSWORD="admin"
+TSM_SERVER_PASSWORD="xxx"
 
 # TSM server db2 port number
-TSM_SERVER_DB_PORT=3700
+TSM_SERVER_DB_PORT=12345
 
 # TSM server db2 DB name
-TSM_SERVER_DB_NAME="tsmdb1"
+TSM_SERVER_DB_NAME="xxx"
 
 # TSM proxy asnode name
-TSM_PROXY_NODE="PROXY_NODE_LHCB"
+TSM_PROXY_NODE="xxx"
 
 # report email addresses (comma separated)
-REPORT_EMAIL_ADDRESS_LIST="Vladimir.Sapunenko@cnaf.infn.it,Daniele.Gregori@cnaf.infn.it,Luca.dellAgnello@cnaf.infn.it,Vincenzo.Vagnoni@bo.infn.it,PierPaolo.Ricci@cnaf.infn.it,Stefano.DalPra@cnaf.infn.it,Paolo.Franchini@cnaf.infn.it"
+REPORT_EMAIL_ADDRESS_LIST="xxx@yyy,xxx@yyy"
 
