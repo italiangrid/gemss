@@ -33,10 +33,10 @@ LOCKDIR=$SYSTEM_DIRECTORY_PATH/YAMSS_LOCK
 STATDIR=$SYSTEM_DIRECTORY_PATH/YAMSS_STAT
 
 rm -f $LOCKDIR/list_lock
-rm -f $STATDIR/list_tape
 rm -f $STATDIR/list_all
+rm -f $STATDIR/list_reconcile
 
-if [ "$MODULE_GENERATE_FILE_LIST"x = "pathx" ]; then
+if [ "$MODULE_GENERATE_FILE_LIST"x = "yesx" ]; then
   if [ "$MIGRATE_SCAN_USE_PATH"x = "yesx" -a "$MIGRATE_SCAN_PATH"x != "x" ]; then
     NF=$(echo $MIGRATE_SCAN_PATH | awk 'BEGIN{FS=","}{print NF}')
     if [ $NF = 1 ]; then
@@ -45,19 +45,22 @@ if [ "$MODULE_GENERATE_FILE_LIST"x = "pathx" ]; then
       echo $MIGRATE_SCAN_PATH | tr "," "\n" > /var/tmp/tapeDirList
       $mmapplypolicy $device -i /var/tmp/tapeDirList -P $yamssListPolicy -B 100000 -N $MIGRATE_NODE_LIST -M YAMSSDEVICENAME=$device -s /var/tmp
     fi
+  else
+    $mmapplypolicy $device -P $yamssListPolicy -B 100000 -N $MIGRATE_NODE_LIST -M YAMSSDEVICENAME=$device -s /var/tmp
   fi
-else
-  $mmapplypolicy $device -P $yamssListPolicy -B 100000 -N $MIGRATE_NODE_LIST -M YAMSSDEVICENAME=$device -s /var/tmp
 fi
 
-tapeocc=$(cat $STATDIR/list_tape | awk '{tape+=$4}END{print tape/1e15}')
+tapeocc=$(cat $STATDIR/list_all | awk '{if(match($13,"M")) tape+=$4;}END{print tape/1e15}')
 
 diskocc=$(cat $STATDIR/list_all | awk '{if($5!=0) disk+=$4;}END{print disk/1e15}')
 
-echo $tapeocc $diskocc > $STATDIR/occupancy
+cat $STATDIR/list_all | awk '{print $1,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$16}' > $STATDIR/filelist
 
-cat $STATDIR/list_all | awk '{print $1,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$15}' > $STATDIR/filelist
+if [ "$RUN_POLICY_RECONCILE"x = "yesx" ]; then
+  cat $STATDIR/list_all | awk '$14!="_NULL_" {print $14,$1,$2,$16}' | sort | tr -s '\n' '\0' > $STATDIR/list_reconcile
+ $dsmreconcile -o -d -filelist=$STATDIR/list_reconcile $mountpoint
+fi
 
-rm -f $STATDIR/list_tape
 rm -f $STATDIR/list_all
+rm -f $STATDIR/list_reconcile
 
