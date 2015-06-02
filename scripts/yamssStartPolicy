@@ -79,25 +79,108 @@ export hostnam=$(hostname|cut -d. -f1)
         if [ "$MIGRATE_SCAN_USE_PATH"x == "yesx" -a "$MIGRATE_SCAN_PATH"x != "x" ]; then
            NF=$(echo $MIGRATE_SCAN_PATH | awk 'BEGIN{FS=","}{print NF}')
            if [ $NF == 1 ]; then
-             $mmapplypolicy $mountpoint/$MIGRATE_SCAN_PATH -m $MIGRATE_RUNNING_THREADS -B $MIGRATE_FILES_PER_THREAD -N $MIGRATE_NODE_LIST -s /var/tmp
-             rc=$?
+             # make scan and prepare file list
+             tmpdir=$(mktemp -d /var/tmp/yamssmigdir.XXXXXXXX)
+             mkdir $tmpdir/garbagecollector
+             mkdir $tmpdir/premigrate
+             echo Performing preparatory scan
+             $mmapplypolicy $mountpoint/$MIGRATE_SCAN_PATH -I prepare -s $tmpdir
+             rc_1=$?
+             mv $tmpdir/mmapplypolicy.*.migrate.TAPE\ MIGRATION* $tmpdir/garbagecollector
+             mv $tmpdir/mmapplypolicy.*.premigrate.TAPE\ PREMIGRATION* $tmpdir/premigrate
+
+             # perform garbage collection step
+             echo Performing garbage collection step
+             $mmapplypolicy $mountpoint/$MIGRATE_SCAN_PATH -r $tmpdir/garbagecollector -m $GARBAGE_COLLECTOR_RUNNING_THREADS -B $GARBAGE_COLLECTOR_FILES_PER_THREAD -N $MIGRATE_NODE_LIST -s /var/tmp
+             rc_2=$?
+
+             # perform premigration step
+             echo Performing premigration step
+             $mmapplypolicy $mountpoint/$MIGRATE_SCAN_PATH -r $tmpdir/premigrate -m $MIGRATE_RUNNING_THREADS -B $MIGRATE_FILES_PER_THREAD -N $MIGRATE_NODE_LIST -s /var/tmp
+             rc_3=$?
+
+             # remove temporary directory
+             rm -rf $tmpdir/garbagecollector
+             rm -rf $tmpdir/premigrate
+             rmdir $tmpdir
+
            else
              echo $MIGRATE_SCAN_PATH | tr "," "\n" > /var/tmp/tapeDirList
-             $mmapplypolicy $device -i /var/tmp/tapeDirList -m $MIGRATE_RUNNING_THREADS -B $MIGRATE_FILES_PER_THREAD -N $MIGRATE_NODE_LIST -s /var/tmp
-             rc=$?
+
+             # make scan and prepare file list
+             tmpdir=$(mktemp -d /var/tmp/yamssmigdir.XXXXXXXX)
+             mkdir $tmpdir/garbagecollector
+             mkdir $tmpdir/premigrate
+             echo Performing preparatory scan
+             $mmapplypolicy $device -i /var/tmp/tapeDirList -I prepare -s $tmpdir
+             rc_1=$?
+             mv $tmpdir/mmapplypolicy.*.migrate.TAPE\ MIGRATION* $tmpdir/garbagecollector
+             mv $tmpdir/mmapplypolicy.*.premigrate.TAPE\ PREMIGRATION* $tmpdir/premigrate
+
+             # perform garbage collection step
+             echo Performing garbage collection step
+             $mmapplypolicy $device -r $tmpdir/garbagecollector -m $GARBAGE_COLLECTOR_RUNNING_THREADS -B $GARBAGE_COLLECTOR_FILES_PER_THREAD -N $MIGRATE_NODE_LIST -s /var/tmp
+             rc_2=$?
+
+             # perform premigration step
+             echo Performing premigration step
+             $mmapplypolicy $device -r $tmpdir/premigrate -m $MIGRATE_RUNNING_THREADS -B $MIGRATE_FILES_PER_THREAD -N $MIGRATE_NODE_LIST -s /var/tmp
+             rc_3=$?
+
+             # remove temporary directory
+             rm -rf $tmpdir/garbagecollector
+             rm -rf $tmpdir/premigrate
+             rmdir $tmpdir
+
            fi
         else
-           $mmapplypolicy $device -m $MIGRATE_RUNNING_THREADS -B $MIGRATE_FILES_PER_THREAD -N $MIGRATE_NODE_LIST -s /var/tmp
-           rc=$? 
+           # make scan and prepare file list
+           tmpdir=$(mktemp -d /var/tmp/yamssmigdir.XXXXXXXX)
+           mkdir $tmpdir/garbagecollector
+           mkdir $tmpdir/premigrate
+           echo Performing preparatory scan
+           $mmapplypolicy $device -I prepare -s $tmpdir
+           rc_1=$?
+           mv $tmpdir/mmapplypolicy.*.migrate.TAPE\ MIGRATION* $tmpdir/garbagecollector
+           mv $tmpdir/mmapplypolicy.*.premigrate.TAPE\ PREMIGRATION* $tmpdir/premigrate
+
+           # perform garbage collection step
+           echo Performing garbage collection step
+           $mmapplypolicy $device -r $tmpdir/garbagecollector -m $GARBAGE_COLLECTOR_RUNNING_THREADS -B $GARBAGE_COLLECTOR_FILES_PER_THREAD -N $MIGRATE_NODE_LIST -s /var/tmp
+           rc_2=$?
+
+           # perform premigration step
+           echo Performing premigration step
+           $mmapplypolicy $device -r $tmpdir/premigrate -m $MIGRATE_RUNNING_THREADS -B $MIGRATE_FILES_PER_THREAD -N $MIGRATE_NODE_LIST -s /var/tmp
+           rc_3=$?
+
+           # remove temporary directory
+           rm -rf $tmpdir/garbagecollector
+           rm -rf $tmpdir/premigrate
+           rmdir $tmpdir
+
         fi
 
         # If the command completed successfully, or if there is an
         # unacceptable error, there is nothing more we can do.
-        if [[ $rc -ne $MM_FsNotMounted && $rc -ne $MM_NotSupported &&
-              $rc -ne $MM_DaemonDown   && $rc -ne $MM_QuorumWait   ]]
+        if [[ $rc_1 -ne $MM_FsNotMounted && $rc_1 -ne $MM_NotSupported &&
+              $rc_1 -ne $MM_DaemonDown   && $rc_1 -ne $MM_QuorumWait   ]]
         then 
           cleanupAndExit 0
         fi 
+
+        if [[ $rc_2 -ne $MM_FsNotMounted && $rc_2 -ne $MM_NotSupported &&
+              $rc_2 -ne $MM_DaemonDown   && $rc_2 -ne $MM_QuorumWait   ]]
+        then
+          cleanupAndExit 0
+        fi
+
+        if [[ $rc_3 -ne $MM_FsNotMounted && $rc_3 -ne $MM_NotSupported &&
+              $rc_3 -ne $MM_DaemonDown   && $rc_3 -ne $MM_QuorumWait   ]]
+        then
+          cleanupAndExit 0
+        fi
+
         # If we get here, it means that the node was not able to run mmapplypolicy
         print -- "$(date): $mmcmd: Unable to run mmapplypolicy $device"
      else

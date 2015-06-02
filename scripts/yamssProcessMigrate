@@ -238,43 +238,45 @@ if [ "$1" = "PREMIGRATE" -o "$1" = "MIGRATE" ]; then
         # add extended attribute to flag it is migrated
         $attr -s storm.migrated -V "" $file >/dev/null 2>&1
 
-        objectid=$($ng yamssDB2Query $TSM_SERVER $TSM_SERVER_DB_NAME $TSM_SERVER_DB_PORT $TSM_SERVER_ID $TSM_SERVER_PASSWORD "select objid from $TSM_SERVER_DB_NAME.spaceman_objects as sos left join $TSM_SERVER_DB_NAME.nodes nr on (sos.nodeid=nr.nodeid) left join $TSM_SERVER_DB_NAME.filespaces fs on (sos.fsid=fs.fsid) where nr.nodename='$TSM_PROXY_NODE' and fs.fsname='$mountpoint' and state=1 and extobjid=x'$extobjid'")
-        rc_b=$?
-        rc_c=1
-        if [ "$objectid"x = "x" ]; then
-          rc_b=1
+        if [ "$1" = "PREMIGRATE" -o $GARBAGE_COLLECTOR_STATS"x" = "yesx" ]; then
+          objectid=$($ng yamssDB2Query $TSM_SERVER $TSM_SERVER_DB_NAME $TSM_SERVER_DB_PORT $TSM_SERVER_ID $TSM_SERVER_PASSWORD "select objid from $TSM_SERVER_DB_NAME.spaceman_objects as sos left join $TSM_SERVER_DB_NAME.nodes nr on (sos.nodeid=nr.nodeid) left join $TSM_SERVER_DB_NAME.filespaces fs on (sos.fsid=fs.fsid) where nr.nodename='$TSM_PROXY_NODE' and fs.fsname='$mountpoint' and state=1 and extobjid=x'$extobjid'")
+          rc_b=$?
+          rc_c=1
+          if [ "$objectid"x = "x" ]; then
+            rc_b=1
+          else
+            volname=$(read_volume_name $objectid)
+            rc_c=$?
+          fi
+
+          if [ $rc_b != 0 -o  $rc_c != 0 ]; then
+            volname=null 
+          fi
         else
-          volname=$(read_volume_name $objectid)
-          rc_c=$?
+          volname=null
         fi
 
-        if [ $rc_b != 0 -o  $rc_c != 0 ]; then
-           volname=null 
+        if [ $volname"x" = "x" ]; then
+          volname=null 
         fi
-     else
-        volname=null
-     fi
 
-     if [ $volname"x" = "x" ]; then
-        volname=null 
-     fi
+        # get insert time from TSM DB
+        if [ $extobjid"x" != "0x" ]; then 
+          inserttime=$($ng yamssDB2Query $TSM_SERVER $TSM_SERVER_DB_NAME $TSM_SERVER_DB_PORT $TSM_SERVER_ID $TSM_SERVER_PASSWORD "select insdate from $TSM_SERVER_DB_NAME.spaceman_objects as sos left join $TSM_SERVER_DB_NAME.nodes nr on (sos.nodeid=nr.nodeid) left join $TSM_SERVER_DB_NAME.filespaces fs on (sos.fsid=fs.fsid) where nr.nodename='$TSM_PROXY_NODE' and fs.fsname='$mountpoint' and state=1 and extobjid=x'$extobjid'"|cut -d. -f1 | tr "-" " " | tr ":" " " | awk '{print mktime($0)}')
+        else
+          inserttime=$(date +%s)
+        fi
 
-     # get insert time from TSM DB
-     if [ $extobjid"x" != "0x" ]; then 
-       inserttime=$($ng yamssDB2Query $TSM_SERVER $TSM_SERVER_DB_NAME $TSM_SERVER_DB_PORT $TSM_SERVER_ID $TSM_SERVER_PASSWORD "select insdate from $TSM_SERVER_DB_NAME.spaceman_objects as sos left join $TSM_SERVER_DB_NAME.nodes nr on (sos.nodeid=nr.nodeid) left join $TSM_SERVER_DB_NAME.filespaces fs on (sos.fsid=fs.fsid) where nr.nodename='$TSM_PROXY_NODE' and fs.fsname='$mountpoint' and state=1 and extobjid=x'$extobjid'"|cut -d. -f1 | tr "-" " " | tr ":" " " | awk '{print mktime($0)}')
-     else
-       inserttime=$(date +%s)
-     fi
+        if [ $inserttime"x" = "x" ]; then
+          inserttime=$(date +%s)
+        fi 
 
-     if [ $inserttime"x" = "x" ]; then
-       inserttime=$(date +%s)
-     fi 
-
-     # write out the statistics log
-     if [ "$1" = "PREMIGRATE" ]; then
-        write_stat $STATDIR/premigrate $LOCKDIR/premigrate.write_stat PRE $rc $inserttime $startmigtime $stopmigtime $filetime $file $filesize $tsize $(hostname) $volname
-     else
-        write_stat $STATDIR/migrate $LOCKDIR/migrate.write_stat MIG $rc $inserttime $startmigtime $stopmigtime $filetime $file $filesize $tsize $(hostname) $volname
+        # write out the statistics log
+        if [ "$1" = "PREMIGRATE" ]; then
+          write_stat $STATDIR/premigrate $LOCKDIR/premigrate.write_stat PRE $rc $inserttime $startmigtime $stopmigtime $filetime $file $filesize $tsize $(hostname) $volname
+        else
+          write_stat $STATDIR/migrate $LOCKDIR/migrate.write_stat MIG $rc $inserttime $startmigtime $stopmigtime $filetime $file $filesize $tsize $(hostname) $volname
+        fi
      fi
 
      # premigrate files to tape

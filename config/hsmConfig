@@ -29,6 +29,15 @@ MIGRATE_MAX_RETENTION=259200
 # timeout for migrate command (in secs)
 MIGRATE_PROCESS_TIMEOUT=14400
 
+# maximum number of running garbage collector threads per node
+GARBAGE_COLLECTOR_RUNNING_THREADS=30
+
+# maximum number of files for each garbage collector thread
+GARBAGE_COLLECTOR_FILES_PER_THREAD=200
+
+# do not update statistics files for garbage collection if speed up is needed
+GARBAGE_COLLECTOR_STATS=no
+
 # garbage collection low threshold (in %)
 GARBAGE_COLLECTOR_LOW_THRESHOLD=96
 
