@@ -1,6 +1,6 @@
 Summary: INFN GEMSS
 Name: gemss-hsm
-Version: 1.6.7
+Version: 1.6.9
 Release: 1
 Source0: %{name}-%{version}.tar.gz
 License: GPL
@@ -31,6 +31,7 @@ make -C $RPM_SOURCE_DIR buildinstall
 /etc/profile.d/yamss.sh
 /usr/local/yamss/bin/ng
 /usr/local/yamss/bin/yamssAbortDmSession
+/usr/local/yamss/bin/yamssCheckDefunctPolicy
 /usr/local/yamss/bin/yamssCleanRecalls
 /usr/local/yamss/bin/yamssCleanupDMErrorDirectory
 /usr/local/yamss/bin/yamssCommands
@@ -47,6 +48,7 @@ make -C $RPM_SOURCE_DIR buildinstall
 /usr/local/yamss/bin/yamssGetStatus
 /usr/local/yamss/bin/yamssGetTapeName
 /usr/local/yamss/bin/yamssGlobalFunctions
+/usr/local/yamss/bin/yamssInvalidateTapeCopy
 /usr/local/yamss/bin/yamssKillRecallDaemon
 /usr/local/yamss/bin/yamssListExpiredFiles
 /usr/local/yamss/bin/yamssListPolicy

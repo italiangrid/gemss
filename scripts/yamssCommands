@@ -32,6 +32,7 @@ yamssFileStatus=/usr/local/yamss/bin/yamssFileStatus
 yamssLogger=/usr/local/yamss/bin/yamssLogger
 yamssMigrateStat=/usr/local/yamss/bin/yamssMigrateStat
 yamssRecallStat=/usr/local/yamss/bin/yamssRecallStat
+yamssCheckDefunctPolicy=/usr/local/yamss/bin/yamssCheckDefunctPolicy
 yamssLs=/usr/local/yamss/bin/yamssLs
 yamssGetDmAttr=/usr/local/yamss/bin/yamssGetDmAttr
 yamssSetDmAttr=/usr/local/yamss/bin/yamssSetDmAttr
