@@ -11,15 +11,13 @@ if [ "$zombie"x != "x" ]; then
   ntid=$(ls /proc/$pid/task | wc -l)
   if [ $ntid -eq 2 ]; then
     tid=$(ls /proc/$pid/task | tail -n1)
-    echo "Zombie tsapolicy process found"
-    pstree -p $ppid
-    echo "Waiting 120 seconds before second check"
     sleep 120
     # check for a second time
-    if grep "(tsapolicy) Z " /proc/$pid/stat >/dev/null; then
+    if grep "(tsapolicy) Z " /proc/$pid/stat >/dev/null 2>&1; then
       dtid=$(ls /proc/$pid/task | tail -n1)
       if [ "$dtid"x = "$tid"x ]; then
-        echo "Zombie tsapolicy process still there after 120 seconds"
+        echo "Zombie tsapolicy process running for more than 120 seconds"
+        pstree -p $ppid
         echo "Killing process $tid"
         kill -9 $tid
       fi
