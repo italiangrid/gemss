@@ -8,13 +8,13 @@ if [ "$zombie"x != "x" ]; then
   ppid=$(echo $zombie | awk '{print $2}')
   pid=$(echo $zombie | awk '{print $3}')
   # check if pid has a child task
-  ntid=$(ls /proc/$pid/task | wc -l)
+  ntid=$(ls /proc/$pid/task 2>/dev/null | wc -l)
   if [ $ntid -eq 2 ]; then
-    tid=$(ls /proc/$pid/task | tail -n1)
+    tid=$(ls /proc/$pid/task 2>/dev/null | tail -n1)
     sleep 120
     # check for a second time
     if grep "(tsapolicy) Z " /proc/$pid/stat >/dev/null 2>&1; then
-      dtid=$(ls /proc/$pid/task | tail -n1)
+      dtid=$(ls /proc/$pid/task 2>/dev/null | tail -n1)
       if [ "$dtid"x = "$tid"x ]; then
         echo "Zombie tsapolicy process running for more than 120 seconds"
         pstree -p $ppid
