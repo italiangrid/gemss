@@ -100,9 +100,7 @@ export hostnam=$(hostname|cut -d. -f1)
              rc_3=$?
 
              # remove temporary directory
-             rm -rf $tmpdir/garbagecollector
-             rm -rf $tmpdir/premigrate
-             rmdir $tmpdir
+             rm -rf $tmpdir
 
            else
              echo $MIGRATE_SCAN_PATH | tr "," "\n" > /var/tmp/tapeDirList
@@ -128,9 +126,7 @@ export hostnam=$(hostname|cut -d. -f1)
              rc_3=$?
 
              # remove temporary directory
-             rm -rf $tmpdir/garbagecollector
-             rm -rf $tmpdir/premigrate
-             rmdir $tmpdir
+             rm -rf $tmpdir
 
            fi
         else
@@ -155,9 +151,7 @@ export hostnam=$(hostname|cut -d. -f1)
            rc_3=$?
 
            # remove temporary directory
-           rm -rf $tmpdir/garbagecollector
-           rm -rf $tmpdir/premigrate
-           rmdir $tmpdir
+           rm -rf $tmpdir
 
         fi
 
