@@ -74,3 +74,4 @@ if [ "$HOURNOW"x = "$GENERATE_DAILY_HOUR"x -a "$DAYNOW"x != "$DAYLAST"x ]; then
 
 fi
 
+cleanupAndExit 0
