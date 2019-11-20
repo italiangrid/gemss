@@ -3,7 +3,7 @@
 . /usr/local/yamss/bin/yamssCommands
 
 device=$1
-mountpoint=$(cat /proc/mounts | grep "^/dev/$device " | awk '{print $2}')
+mountpoint=$(cat /proc/mounts | grep "^$device " | awk '{print $2}')
 
 . $mountpoint/system/YAMSS_CONFIG/hsmConfig
 
