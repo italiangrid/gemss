@@ -21,7 +21,7 @@ echo $$
 parid=$1
 device=$2
 
-mountpoint=$(cat /proc/mounts | grep "^/dev/$device " | awk '{print $2}')
+mountpoint=$(cat /proc/mounts | grep "^$device " | awk '{print $2}')
 
 SYSTEM_DIRECTORY_PATH=$mountpoint/system
 STATDIR=$SYSTEM_DIRECTORY_PATH/YAMSS_STAT
