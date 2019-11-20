@@ -107,7 +107,7 @@ while [ 1 ]; do
        if [ -f $mntpoint/system/YAMSS_DRAIN/recall.drain ]; then
          printf "$$\nDrain file found for recalls\n" | $yamssLogger $devname yamssMonitor monitor.log
        else
-         printf "$$\nProcess is running\n" | $yamssLogger $devname yamssMonitor monitor.log
+         printf "$$\nProcess is running\n" | $yamssLogger $devname yamssMonitor monitor.log $mntpoint
        fi
      fi
 
@@ -118,7 +118,7 @@ while [ 1 ]; do
      done
      if [ "$nrun"x = "0x" ]; then
         MYPID=$$
-        (echo $MYPID; $ngserver) | $yamssLogger $devname yamssMonitor monitor.log &
+        (echo $MYPID; $ngserver) | $yamssLogger $devname yamssMonitor monitor.log $mntpoint &
      fi 
 
      if [ "$MODULE_SEND_REPORT"x = "yesx" ]; then
@@ -252,7 +252,7 @@ while [ 1 ]; do
         let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$devname$" | wc -l)
      done
      if [ "$nrun"x = "0x" ]; then
-        $yamssStartPolicy $devname 2>&1 | $yamssLogger $devname yamssStartPolicy startpolicy.log &
+        $yamssStartPolicy $devname 2>&1 | $yamssLogger $devname yamssStartPolicy startpolicy.log $mntpoint &
      fi
 
      # Check if drain file is present
@@ -270,7 +270,7 @@ while [ 1 ]; do
         let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$devname$" | wc -l)
      done
      if [ "$nrun"x = "0x" ]; then
-        $yamssReorderRecall $devname 2>&1 | $yamssLogger $devname yamssReorderRecall monitor.log &
+        $yamssReorderRecall $devname 2>&1 | $yamssLogger $devname yamssReorderRecall monitor.log $mntpoint &
      fi
 
      # check if this node is within the recall node list
