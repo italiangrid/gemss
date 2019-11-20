@@ -139,3 +139,4 @@ if [ "$HOURNOW"x = "$REPORT_DAILY_HOUR"x -a "$DAYNOW"x != "$DAYLAST"x ]; then
   } | sendmail -f $device@cnaf.infn.it $REPORT_EMAIL_ADDRESS_LIST
 fi
 
+cleanupAndExit 0
