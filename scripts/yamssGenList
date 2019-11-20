@@ -23,7 +23,7 @@ echo $$
 
 export device=$arg1
 
-export mountpoint=$(cat /proc/mounts | grep "^/dev/$device " | awk '{print $2}')
+export mountpoint=$(cat /proc/mounts | grep "^$device " | awk '{print $2}')
 
 . /usr/local/yamss/bin/yamssCommands
 
