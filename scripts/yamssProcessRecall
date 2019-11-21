@@ -163,19 +163,21 @@ if [ "$recfile"x != "0x" ]; then
      for file in $(cat ./$(basename $recfile) | awk '{print $4}'); do
         let i=$i+1
         # catch file name on the line and exclude ANS9101I (e.g. when file is already on disk)
-        if echo "$myline" | egrep -v "^ANS9101I " | egrep "^$file | $file | $file$" >/dev/null 2>&1; then
-          # catch if it was succesful
-          if echo "$myline" | egrep "^Recalling" 2>/dev/null | egrep "\[Done\]$" >/dev/null 2>&1; then
-             # log success to sensor file
-             echo REC OK $(date +%s) $file $(hostname) >> $STATDIR/sensor_recall
-             echo arrayDone[$i]=\"success\" >> $glbvar
-             break
-           else
-             # log fail to sensor file
-             echo REC ERR $(date +%s) $file $(hostname) >> $STATDIR/sensor_recall
-             echo arrayDone[$i]=\"failure\" >> $glbvar
-             break
-           fi
+        if [[ "$myline" != "ANS9101I"* ]]; then
+          if [[ "$myline" = "$file "* || "$myline" = *" $file "* || "$myline" = *" $file" ]]; then
+            # catch if it was succesful
+            if [[ "$myline" = "Recalling"* && "$myline" = *"[Done]" ]]; then
+              # log success to sensor file
+              echo REC OK $(date +%s) $file $(hostname) >> $STATDIR/sensor_recall
+              echo arrayDone[$i]=\"success\" >> $glbvar
+              break
+            else
+              # log fail to sensor file
+              echo REC ERR $(date +%s) $file $(hostname) >> $STATDIR/sensor_recall
+              echo arrayDone[$i]=\"failure\" >> $glbvar
+              break
+            fi
+          fi
         fi
      done
   done
