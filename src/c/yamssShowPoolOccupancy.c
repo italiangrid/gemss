@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
   }
   flag=!strcmp(argv[1],"-f")?1:0;  
 
-  snprintf(fsdev,256,"/dev/%s",flag?argv[2]:argv[1]);
+  snprintf(fsdev,256,"%s",flag?argv[2]:argv[1]);
 
   /* look for the mount point where the file resides */
   mnttab = fopen("/etc/mtab", "r");
