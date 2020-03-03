@@ -34,16 +34,18 @@ while [ 1 ]; do
     devf=$(echo "$dev" | cut -c1)
     mntpoint=$(echo "$myline" | awk '{print $2}')
     fstype=$(echo "$myline" | awk '{print $3}')
-    devmm=$(ls -l "$dev" 2>/dev/null | tr "," " " | awk '{printf "%x%x\n",$5,$6}')
 
-    # line is commented
+    # line is commented or filesystem is not GPFS, skip 
     if [ "$devf"x = "#"x -o "$fstype"x != "gpfs"x ]; then
       continue
     fi
-    devname=$(echo $dev|cut -d/ -f3)
-    
+
+    # get filesystem name and id
+    devname=$(echo "$dev" | tr "/" " " | awk '{print $NF}')     
+    devmm=$($mmfsadm dump stripe | grep -A2 "State of StripeGroup \"$devname\"" | tail -n1 | cut -d, -f1 | awk '{print $3}' | cut -c2-3,7-8 | tr '[:upper:]' '[:lower:]')
+
     # cannot determine major and minor number for gpfs device
-    if [ "$devmm"x = "x" ]; then
+    if [ "$devmm"x = "x" -o "$devmm"x = "ffff"x ]; then
       continue
     fi
 
@@ -107,7 +109,7 @@ while [ 1 ]; do
        if [ -f $mntpoint/system/YAMSS_DRAIN/recall.drain ]; then
          printf "$$\nDrain file found for recalls\n" | $yamssLogger $devname yamssMonitor monitor.log
        else
-         printf "$$\nProcess is running\n" | $yamssLogger $devname yamssMonitor monitor.log $mntpoint
+         printf "$$\nProcess is running\n" | $yamssLogger $devname yamssMonitor monitor.log $mntpoint 
        fi
      fi
 
@@ -228,6 +230,21 @@ while [ 1 ]; do
        fi
      fi
 
+     if [ "$RECALL_USE_STORM"x = "1x" ]; then
+       # start yamssFixRecallTable for this filesystem if not yet running
+       let nrun=0
+       for pids in $($pidof -x yamssFixRecallTable); do
+         papid=$(egrep "^PPid:" /proc/$pids/status | awk '{print $2}')
+         if [ "$papid"x != "1x" ]; then
+           continue
+         fi
+         let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$devname$" | wc -l)
+       done
+       if [ "$nrun"x = "0x" ]; then
+         $yamssFixRecallTable $devname 2>&1 | $yamssLogger $devname yamssFixRecallTable monitor.log &
+       fi
+     fi
+
      # start yamssCheckDefunctPolicy process for this filesystem if not yet running
      let nrun=0
      for pids in $($pidof -x yamssCheckDefunctPolicy); do
@@ -270,7 +287,7 @@ while [ 1 ]; do
         let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$devname$" | wc -l)
      done
      if [ "$nrun"x = "0x" ]; then
-        $yamssReorderRecall $devname 2>&1 | $yamssLogger $devname yamssReorderRecall monitor.log $mntpoint &
+        $yamssReorderRecall $devname 2>&1 | $yamssLogger $devname yamssReorderRecall monitor.log &
      fi
 
      # check if this node is within the recall node list
@@ -297,7 +314,7 @@ while [ 1 ]; do
      done
      let nrun=$nrun+1
      for nlau in $(seq $nrun $RECALL_RUNNING_THREADS); do
-        $yamssProcessRecall $devname 2>&1 | $yamssLogger $devname yamssProcessRecall monitor.log &
+        $yamssProcessRecall $devname 2>&1 | $yamssLogger $devname yamssProcessRecall monitor.log $mntpoint &
      done
  
   done < /proc/mounts
