@@ -83,6 +83,9 @@ RECALL_USE_FREE_GPFS_POOL=yes
 # period of time after which dmapi recall error file are cleaned up (in sec)
 RECALL_DMAPI_ERROR_CLEANUP=259200
 
+# hour when to check and fix StoRM recall table entries (0..24)
+RECALL_TABLE_CHECK_HOUR=1
+
 # activate optional module: asyncronous remove
 MODULE_REMOVE=no
 
