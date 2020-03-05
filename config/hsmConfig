@@ -86,6 +86,9 @@ RECALL_DMAPI_ERROR_CLEANUP=259200
 # hour when to check and fix StoRM recall table entries (0..24)
 RECALL_TABLE_CHECK_HOUR=1
 
+# maximum number of results get from recall table 
+RECALL_TABLE_MAX_RESULTS=10000
+
 # activate optional module: asyncronous remove
 MODULE_REMOVE=no
 

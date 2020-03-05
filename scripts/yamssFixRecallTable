@@ -29,25 +29,12 @@ export mountpoint=$(cat /proc/mounts | grep "^$device " | awk '{print $2}')
 
 export SYSTEM_DIRECTORY_PATH=$mountpoint/system
 
-export GPFS_rshPath="/usr/bin/ssh"
-
 if [ ! -f $mountpoint/system/YAMSS_CONFIG/hsmConfig ]; then
   echo "Error: missing hsmConfig file in system directory"
   cleanupAndExit 0        
 fi
 
 . $mountpoint/system/YAMSS_CONFIG/hsmConfig
-
-export GPFSSDRFILE=/var/mmfs/gen/mmsdrfs
-
-# Check if this is the owner node of the TSM failover group
-hostnam=$(hostname|cut -d. -f1)
-ownerid=$(cat $mountpoint/.SpaceMan/hsmfsconfig.xml | grep Ownernode | cut -d">" -f2 | cut -d"<" -f1)
-ownernode=$(cat $GPFSSDRFILE | grep ":20_MEMBER_NODE:" | cut -d: -f5,6 | grep "^$ownerid:" | cut -d: -f2)
-
-if [ "$ownernode"x = "x" -o "$hostnam"x = "x" -o "$ownernode"x != "$hostnam"x ]; then
-  cleanupAndExit 0
-fi
 
 # read last report time
 LASTREPORT=$(cat $SYSTEM_DIRECTORY_PATH/YAMSS_STAT/lastrecallcheck 2>/dev/null)
@@ -74,7 +61,7 @@ if [ "$HOURNOW"x = "$RECALL_TABLE_CHECK_HOUR"x -a "$DAYNOW"x != "$DAYLAST"x ]; t
     rm -f /tmp/recall_successful.txt; touch /tmp/recall_successful.txt
     rm -f /tmp/recall_resubmit.txt; touch /tmp/recall_resubmit.txt
 
-    curl -s -S -H "Token:STRINGACMS" -X GET http://$STORM_BACKEND_NODE:9998/recalltable/task?maxResults=999999999 | tr '#' '\n' | tr "{" " " | tr "}" " " | awk '(match($4,"BOL")||match($4,"PTG"))&&match($9,"IN_PROGRESS") {print $0}' > /tmp/recall_table.txt
+    curl -s -S -H "Token:$STORM_BACKEND_TOKEN" -X GET http://$STORM_BACKEND_NODE:9998/recalltable/task?maxResults=$RECALL_TABLE_MAX_RESULTS | tr '#' '\n' | tr "{" " " | tr "}" " " | awk '(match($4,"BOL")||match($4,"PTG"))&&match($9,"IN_PROGRESS") {print $0}' > /tmp/recall_table.txt
 
     for file in $(cat /tmp/recall_table.txt | awk '{print $5}' | sort -u ); do
       if ! egrep " $file$" $mountpoint/system/YAMSS_RECALL/* >/dev/null 2>&1; then
@@ -98,12 +85,12 @@ if [ "$HOURNOW"x = "$RECALL_TABLE_CHECK_HOUR"x -a "$DAYNOW"x != "$DAYLAST"x ]; t
 
     for taskid in $(for file in $(cat /tmp/recall_successful.txt); do grep -P "\t$file\t" /tmp/recall_table.txt | awk '{print $1}'; done); do
       echo File already on disk. Setting status success for taskid $taskid
-      curl -s -S -H "Token:STRINGACMS" -H "Content-Type: text/plain" -X PUT -d "status=0" http://$STORM_BACKEND_NODE:9998/recalltable/task/$taskid
+      curl -s -S -H "Token:$STORM_BACKEND_TOKEN" -H "Content-Type: text/plain" -X PUT -d "status=0" http://$STORM_BACKEND_NODE:9998/recalltable/task/$taskid
     done
 
     for taskid in $(for file in $(cat /tmp/recall_missing_files.txt); do grep -P "\t$file\t" /tmp/recall_table.txt | awk '{print $1}'; done); do
       echo File removed from disk. Setting status failure for taskid $taskid
-      curl -s -S -H "Token:STRINGACMS" -H "Content-Type: text/plain" -X PUT -d "status=3" http://$STORM_BACKEND_NODE:9998/recalltable/task/$taskid
+      curl -s -S -H "Token:$STORM_BACKEND_TOKEN" -H "Content-Type: text/plain" -X PUT -d "status=3" http://$STORM_BACKEND_NODE:9998/recalltable/task/$taskid
     done
 
     for file in $(cat /tmp/recall_resubmit.txt); do
