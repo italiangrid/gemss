@@ -15,6 +15,7 @@ mmchattr=/usr/lpp/mmfs/bin/mmchattr
 mmlsattr=/usr/lpp/mmfs/bin/mmlsattr
 mmrestripefile=/usr/lpp/mmfs/bin/mmrestripefile
 mmlsfs=/usr/lpp/mmfs/bin/mmlsfs
+mmfsadm=/usr/lpp/mmfs/bin/mmfsadm
 attr=/usr/bin/attr
 pidof=/sbin/pidof
 yamssEnqueueRecallSingle=/usr/local/yamss/bin/yamssEnqueueRecallSingle

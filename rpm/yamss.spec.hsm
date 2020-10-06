@@ -1,6 +1,6 @@
 Summary: INFN GEMSS
 Name: gemss-hsm
-Version: 1.7.4
+Version: 1.8.4
 Release: 1
 Source0: %{name}-%{version}.tar.gz
 License: GPL
@@ -42,6 +42,7 @@ make -C $RPM_SOURCE_DIR buildinstall
 /usr/local/yamss/bin/yamssEnqueueRecall
 /usr/local/yamss/bin/yamssEnqueueRecallSingle
 /usr/local/yamss/bin/yamssFileStatus
+/usr/local/yamss/bin/yamssFixRecallTable
 /usr/local/yamss/bin/yamssForceScan
 /usr/local/yamss/bin/yamssGenList
 /usr/local/yamss/bin/yamssGetDmAttr
