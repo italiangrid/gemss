@@ -6,6 +6,7 @@ dsmmigfs=/opt/tivoli/tsm/client/hsm/bin/dsmmigfs
 dsmls=/opt/tivoli/tsm/client/hsm/bin/dsmls
 dsmmigrate=/opt/tivoli/tsm/client/hsm/bin/dsmmigrate
 dsmreconcile=/opt/tivoli/tsm/client/hsm/bin/dsmreconcile
+dsmreconcileGPFS=/opt/tivoli/tsm/client/hsm/multiserver/bin/dsmreconcileGPFS.pl
 mmdf=/usr/lpp/mmfs/bin/mmdf
 mmlsquota=/usr/lpp/mmfs/bin/mmlsquota
 mmlsfileset=/usr/lpp/mmfs/bin/mmlsfileset
