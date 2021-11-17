@@ -304,18 +304,44 @@ while [ 1 ]; do
      fi
 
      # start yamssProcessRecall processes for this filesystem if not yet running
-     let nrun=0
+     declare -a libraries=("lib1" "lib2")
+#     let nrun=0
+     for lib in "${libraries[@]}"; do
+	let nrun_${lib}=0
+        nrun_name=nrun_${lib}
+#        printf "$$\n1. number of process for $lib: ${!nrun_name}\n" | $yamssLogger $devname yamssMonitor monitor.log
+     done
      for pids in $($pidof -x yamssProcessRecall); do
         papid=$(egrep "^PPid:" /proc/$pids/status | awk '{print $2}')
         if [ "$papid"x != "1x" ]; then
           continue
         fi
-        let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$devname$" | wc -l)
+#        let nrun=$nrun+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$devname$" | wc -l)
+     	for lib in "${libraries[@]}"; do
+          nrun_name=nrun_${lib}
+#          printf "$$\n2,4. number of process for $lib: ${!nrun_name}\n" | $yamssLogger $devname yamssMonitor monitor.log
+          #let nrun_${lib}=${!nrun_name}+$(cat /proc/$pids/cmdline 2>/dev/null | tr "\0" "\n" | tail -n1 | egrep "^$devname$" | egrep "^$lib$" | wc -l)
+	  let nrun_${lib}=${!nrun_name}+$(cat /proc/$pids/cmdline 2>/dev/null | tail -n1 | grep -E "$devname.*$lib" | wc -l)
+#          printf "$$\n2,5. number of process for $lib: ${!nrun_name}\n" | $yamssLogger $devname yamssMonitor monitor.log
+     	done
      done
-     let nrun=$nrun+1
-     for nlau in $(seq $nrun $RECALL_RUNNING_THREADS); do
-        $yamssProcessRecall $devname 2>&1 | $yamssLogger $devname yamssProcessRecall monitor.log $mntpoint &
+#     let nrun=$nrun+1
+#     for nlau in $(seq $nrun $RECALL_RUNNING_THREADS); do
+#        $yamssProcessRecall $devname 2>&1 | $yamssLogger $devname yamssProcessRecall monitor.log $mntpoint &
+#     done
+     for lib in "${libraries[@]}"; do
+	nrun_name=nrun_${lib}
+        let nrun_${lib}=${!nrun_name}+1       
+#        printf "$$\n2. number of process for $lib: ${!nrun_name}\n" | $yamssLogger $devname yamssMonitor monitor.log
+        rec_runn_name=RECALL_RUNNING_THREADS_${lib}
+	for nlau in $(seq ${!nrun_name} ${!rec_runn_name}); do
+#           printf "$$\n4. rec_runn_name value ${!rec_runn_name}\n" | $yamssLogger $devname yamssMonitor monitor.log
+#           printf "$$\n5. nrun_name value ${!nrun_name}\n" | $yamssLogger $devname yamssMonitor monitor.log
+#           printf "$$\n3. New process $lib\n" | $yamssLogger $devname yamssMonitor monitor.log
+           $yamssProcessRecall $devname $lib 2>&1 | $yamssLogger $devname yamssProcessRecall monitor.log $mntpoint &
+        done
      done
+     
  
   done < /proc/mounts
 

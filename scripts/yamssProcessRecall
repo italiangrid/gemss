@@ -21,6 +21,7 @@ echo $$
 . /usr/local/yamss/bin/yamssGlobalFunctions
 
 device=$1
+lib=$2
      
 mountpoint=$(cat /proc/mounts | grep "^$device " | awk '{print $2}')
 
@@ -35,11 +36,11 @@ fi
 
 
 LOCKDIR=$SYSTEM_DIRECTORY_PATH/YAMSS_LOCK
-RECALLDIR=$SYSTEM_DIRECTORY_PATH/YAMSS_RECALL
+#RECALLDIR=$SYSTEM_DIRECTORY_PATH/YAMSS_RECALL
+RECALLDIR=$SYSTEM_DIRECTORY_PATH/YAMSS_RECALL/$lib
 STATDIR=$SYSTEM_DIRECTORY_PATH/YAMSS_STAT
 DRAINDIR=$SYSTEM_DIRECTORY_PATH/YAMSS_DRAIN
 DMERRORDIR=$SYSTEM_DIRECTORY_PATH/YAMSS_DMERROR
-
 
 
 # check if drain file is present
@@ -354,3 +355,5 @@ else
   rm -f $LOCKDIR/recall.queue.lock
   sleep 10
 fi
+
+#done

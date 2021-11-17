@@ -72,24 +72,48 @@ while read -r myline; do
    let nqueue=$(cat $mntpoint/system/YAMSS_RECALL/recall.queue 2>/dev/null | wc -l)
    echo "   " $devname has $nqueue files in recall queue
 
-   # Count running recall threads
-   let nrun=$(ls $mntpoint/system/YAMSS_RECALL/filelist.ordered.tape.*.running 2>/dev/null | wc -l)
-   let nrunf=$(cat $mntpoint/system/YAMSS_RECALL/filelist.ordered.tape.*.running 2>/dev/null | wc -l)
-   echo "   " $devname has $nrunf files in $nrun tapes being processed by recall threads
+#   # Count running recall threads
+#   let nrun=$(ls $mntpoint/system/YAMSS_RECALL/filelist.ordered.tape.*.running 2>/dev/null | wc -l)
+#   let nrunf=$(cat $mntpoint/system/YAMSS_RECALL/filelist.ordered.tape.*.running 2>/dev/null | wc -l)
+#   echo "   " $devname has $nrunf files in $nrun tapes being processed by recall threads
 
-   # Count tapes waiting for being recalled
-   let ntapes=$(ls $mntpoint/system/YAMSS_RECALL/filelist.ordered.tape.* 2>/dev/null | grep -v 00000000 | wc -l)
-   let ntapesf=$(cat $mntpoint/system/YAMSS_RECALL/filelist.ordered.tape.* 2>/dev/null | wc -l)
-   let ntapesfp=$(cat $mntpoint/system/YAMSS_RECALL/filelist.ordered.tape.00000000 2>/dev/null | wc -l)
-   let ntapes=$ntapes-$nrun
-   let ntapesf=$ntapesf-$nrunf-$ntapesfp
-   echo "   " $devname has $ntapesf files in $ntapes tapes waiting for recall threads
-   if [ $ntapesfp = "1" ]; then
-      str=file
-   else
-      str=files
-   fi
-   echo "   " $devname has $ntapesfp problematic $str found while sorting recalls
+#   # Count tapes waiting for being recalled
+#   let ntapes=$(ls $mntpoint/system/YAMSS_RECALL/filelist.ordered.tape.* 2>/dev/null | grep -v 00000000 | wc -l)
+#   let ntapesf=$(cat $mntpoint/system/YAMSS_RECALL/filelist.ordered.tape.* 2>/dev/null | wc -l)
+#   let ntapesfp=$(cat $mntpoint/system/YAMSS_RECALL/filelist.ordered.tape.00000000 2>/dev/null | wc -l)
+#   let ntapes=$ntapes-$nrun
+#   let ntapesf=$ntapesf-$nrunf-$ntapesfp
+#   echo "   " $devname has $ntapesf files in $ntapes tapes waiting for recall threads
+#   if [ $ntapesfp = "1" ]; then
+#      str=file
+#   else
+#      str=files
+#   fi
+#   echo "   " $devname has $ntapesfp problematic $str found while sorting recalls
+
+   declare -a libraries=("lib1" "lib2")
+   for lib in "${libraries[@]}"; do
+
+     # Count running recall threads
+     let nrun=$(ls $mntpoint/system/YAMSS_RECALL/$lib/filelist.ordered.tape.*.running 2>/dev/null | wc -l)
+     let nrunf=$(cat $mntpoint/system/YAMSS_RECALL/$lib/filelist.ordered.tape.*.running 2>/dev/null | wc -l)
+     echo "   " $devname has $nrunf files in $nrun tapes of lib $lib being processed by recall threads
+
+     # Count tapes waiting for being recalled
+     let ntapes=$(ls $mntpoint/system/YAMSS_RECALL/$lib/filelist.ordered.tape.* 2>/dev/null | grep -v 00000000 | wc -l)
+     let ntapesf=$(cat $mntpoint/system/YAMSS_RECALL/$lib/filelist.ordered.tape.* 2>/dev/null | wc -l)
+     let ntapesfp=$(cat $mntpoint/system/YAMSS_RECALL/$lib/filelist.ordered.tape.00000000 2>/dev/null | wc -l)
+     let ntapes=$ntapes-$nrun
+     let ntapesf=$ntapesf-$nrunf-$ntapesfp
+     echo "   " $devname has $ntapesf files in $ntapes tapes of lib $lib waiting for recall threads
+     if [ $ntapesfp = "1" ]; then
+        str=file
+     else
+        str=files
+     fi
+     echo "   " $devname has $ntapesfp problematic $str of lib $lib found while sorting recalls
+
+   done
 
    let npmig=$(ls $mntpoint/system/YAMSS_MIGRATE/premigrate.running.* 2>/dev/null | wc -l)
    echo "   " $devname has $npmig premigration threads running
