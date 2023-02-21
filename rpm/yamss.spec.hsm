@@ -1,11 +1,11 @@
 Summary: INFN GEMSS
 Name: gemss-hsm
-Version: 1.7.4
+Version: 1.9.0
 Release: 1
 Source0: %{name}-%{version}.tar.gz
 License: GPL
 Group: CNAF
-Requires: gpfs.base >= 4.1.1 jdk >= 2000:1.5 TIVsm-HSM >= 7.1.2
+Requires: gpfs.base >= 4.1.1 jdk-17 TIVsm-HSM >= 7.1.2
 %description
 GEMSS stands for Grid-EnabledMass Storage System, and implements an interface between StoRM, GPFS and TSM.
 %pre
@@ -29,6 +29,8 @@ make -C $RPM_SOURCE_DIR buildinstall
 /etc/init.d/yamssmonitor
 /etc/profile.d/yamss.csh
 /etc/profile.d/yamss.sh
+/usr/local/yamss/bin/citScanOutput.xml
+/usr/local/yamss/bin/dsmerror.log
 /usr/local/yamss/bin/ng
 /usr/local/yamss/bin/yamssAbortDmSession
 /usr/local/yamss/bin/yamssCheckDefunctPolicy
@@ -42,6 +44,7 @@ make -C $RPM_SOURCE_DIR buildinstall
 /usr/local/yamss/bin/yamssEnqueueRecall
 /usr/local/yamss/bin/yamssEnqueueRecallSingle
 /usr/local/yamss/bin/yamssFileStatus
+/usr/local/yamss/bin/yamssFixRecallTable
 /usr/local/yamss/bin/yamssForceScan
 /usr/local/yamss/bin/yamssGenList
 /usr/local/yamss/bin/yamssGetDmAttr
@@ -85,7 +88,9 @@ make -C $RPM_SOURCE_DIR buildinstall
 /usr/local/yamss/bin/yamssUpdateDamagedFiles
 /usr/local/yamss/bin/yamssUpdateVolumesInErrorState
 /usr/local/yamss/bin/yamssWatchdog
-/usr/local/yamss/lib/db2jcc.jar
+/usr/local/yamss/lib/citScanOutput.xml
+/usr/local/yamss/lib/db2jcc4.jar
+/usr/local/yamss/lib/dsmerror.log
 /usr/local/yamss/lib/nailgun-0.7.1.jar
 /usr/local/yamss/lib/yamssDB2Query.class
 /usr/local/yamss/lib/yamssDB2Update.class
