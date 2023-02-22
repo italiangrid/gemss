@@ -23,7 +23,7 @@
 *.hex
 src/c/yamssAbortDmSession
 src/c/yamssDirectoryNotify
-src/c/yamssFileStatus 
+src/c/yamssFileStatus
 src/c/yamssGetDmAttr
 src/c/yamssInvalidateTapeCopy
 src/c/yamssRecall
@@ -32,7 +32,7 @@ src/c/yamssRemoveDmAttr
 src/c/yamssRemoveWrapper
 src/c/yamssRm
 src/c/yamssSetDmAttr
-src/c/yamssShowPoolOccupancy 
+src/c/yamssShowPoolOccupancy
 src/c/yamssSigTermUnblock
 src/c/yamssStubbify
 *.class
