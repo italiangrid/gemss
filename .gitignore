@@ -35,3 +35,4 @@ src/c/yamssSetDmAttr
 src/c/yamssShowPoolOccupancy 
 src/c/yamssSigTermUnblock
 src/c/yamssStubbify
+*.class
