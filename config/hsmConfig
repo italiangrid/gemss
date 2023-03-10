@@ -1,6 +1,9 @@
 # storm node serving the file system (if any)
 STORM_BACKEND_NODE="xxx"
 
+# storm node implementing the tape rest api (if any)
+STORM_TAPE_NODE="xxx"
+
 # storm recall interface token (mandatory)
 STORM_BACKEND_TOKEN="qqq"
 

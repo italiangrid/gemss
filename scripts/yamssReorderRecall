@@ -70,6 +70,15 @@ if [ "$RECALL_USE_STORM"x = "1x" ]; then
      numtakeover=0
   fi
   let numlrec=$numlrec+$numtakeover
+  numtakeover=$($yamssWatchdog -t 60 $curl -s -S -H "Token:$STORM_BACKEND_TOKEN" -X GET http://$STORM_TAPE_NODE/recalltable/cardinality/tasks/readyTakeOver)
+  # if numtakeover is empty storm is probably offline
+  if [ "$numtakeover"x = "x" ]; then
+     echo "Error: StoRM recall table service not responding"
+     # do not use storm for the remainder of the life of this process
+     RECALL_USE_STORM=0
+     numtakeover=0
+  fi
+  let numlrec=$numlrec+$numtakeover
 fi
 
 if [ "$numlrec"x = "0x" ]; then
@@ -129,9 +138,12 @@ done
 if [ "$RECALL_USE_STORM"x = "1x" -a "$numtakeover"x != "0x" ]; then
 
    # takes over tasks from StoRM recall table
-   $yamssWatchdog -t 60 $curl -s -S -H "Content-Type:text/plain" -H "Token:$STORM_BACKEND_TOKEN" -X PUT -d first=$RECALL_STORM_DEQUEUE_MAX http://$STORM_BACKEND_NODE:9998/recalltable/tasks 2>/dev/null | tr '#' '\n' | tr "{" " " | tr "}" " " | while read -r myline; do
+   $yamssWatchdog -t 60 $curl -s -S -H "Content-Type:text/plain" -H "Token:$STORM_BACKEND_TOKEN" -X PUT -d first=$RECALL_STORM_DEQUEUE_MAX http://$STORM_BACKEND_NODE:9998/recalltable/tasks 2>/dev/null | tr '#' '\n' | tr "{" " " | tr "}" " " | awk '{print $1,$5}' > tasks.txt
+   $yamssWatchdog -t 60 $curl -s -S -H "Content-Type:text/plain" -H "Token:$STORM_BACKEND_TOKEN" -X PUT -d first=$RECALL_STORM_DEQUEUE_MAX http://$STORM_TAPE_NODE/recalltable/tasks 2>/dev/null >> tasks.txt
+   
+   cat tasks.txt | while read -r myline; do
      taskid=$(echo "$myline"|awk '{print $1}')
-     fname=$(echo "$myline"|awk '{print $5}')
+     fname=$(echo "$myline"|awk '{print $2}')
      cattr=$($attr -q -g TSMRecT $fname 2>/dev/null)
 
      # check if file is already on disk. This should never happen... but who knows
@@ -145,11 +157,14 @@ if [ "$RECALL_USE_STORM"x = "1x" -a "$numtakeover"x != "0x" ]; then
         continue
      fi
 
-     # if the file was already under recall, append taskid to the existing extended attribute
-     if [ "$cattr"x != x ]; then
-        nattr=$cattr","$taskid
-     else
-        nattr=$taskid
+     # the storm tape rest api doesn't need to be notified about failures
+     if [ "$taskid"x != "unused" ]; then
+        # if the file was already under recall, append taskid to the existing extended attribute
+        if [ "$cattr"x != x ]; then
+           nattr=$cattr","$taskid
+        else
+           nattr=$taskid
+        fi
      fi
 
      # should check whether nattr is too long (1022 bytes), to be fixed
