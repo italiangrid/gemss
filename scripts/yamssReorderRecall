@@ -73,7 +73,7 @@ if [ "$RECALL_USE_STORM"x = "1x" ]; then
 fi
 
 if [ "$STORM_TAPE_NODE"x != "x" ]; then
-  numtakeover_from_stormtape=$($yamssWatchdog -t 60 $curl -s -S -H "Token:$STORM_BACKEND_TOKEN" -X GET http://$STORM_TAPE_NODE/recalltable/cardinality/tasks/readyTakeOver)
+  numtakeover_from_stormtape=$($yamssWatchdog -t 60 $curl -s -S -u "$STORM_TAPE_USER:$STORM_TAPE_PASSWORD" -X GET http://$STORM_TAPE_NODE/recalltable/cardinality/tasks/readyTakeOver)
   # if numtakeover_from_stormtape is empty storm is probably offline
   if [ "$numtakeover_from_stormtape"x = "x" ]; then
      echo "Error: StoRM Tape service not responding"
@@ -147,7 +147,7 @@ fi
 
 if [ "$STORM_TAPE_NODE"x != "x" -a "$numtakeover_from_stormtape"x != "0x" ]; then
    # takes over tasks from StoRM Tape
-   $yamssWatchdog -t 60 $curl -s -S -H "Content-Type:text/plain" -H "Token:$STORM_BACKEND_TOKEN" -X PUT -d first=$RECALL_STORM_DEQUEUE_MAX http://$STORM_TAPE_NODE/recalltable/tasks 2>/dev/null >> ${tmptasks}
+   $yamssWatchdog -t 60 $curl -s -S -H "Content-Type:text/plain" -u "$STORM_TAPE_USER:$STORM_TAPE_PASSWORD" -X PUT -d first=$RECALL_STORM_DEQUEUE_MAX http://$STORM_TAPE_NODE/recalltable/tasks 2>/dev/null >> ${tmptasks}
 fi
 
 cat ${tmptasks} | while read -r myline; do
