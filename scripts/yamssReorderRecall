@@ -41,6 +41,8 @@ STATDIR=$SYSTEM_DIRECTORY_PATH/YAMSS_STAT
 DRAINDIR=$SYSTEM_DIRECTORY_PATH/YAMSS_DRAIN
 CROSSDIR=$SYSTEM_DIRECTORY_PATH/YAMSS_RECALL_CROSS
 
+devname=$(echo "$dev" | tr "/" " " | awk '{print $NF}')
+
 # Check if drain file is present
 if [ -f $DRAINDIR/recall.drain ]; then
    exit 0
@@ -123,9 +125,11 @@ for filewrapper in $(ls $DMRECALLDIR); do
     mntpoint=$(echo $filep | awk '{print $2}')
     inodenum=$(echo $filep | awk '{print $3}')
     # determine path querying the tsm db
-
+    
     fname=$($ng yamssDB2Query $TSM_SERVER $TSM_SERVER_DB_NAME $TSM_SERVER_DB_PORT $TSM_SERVER_ID $TSM_SERVER_PASSWORD "select alias from $TSM_SERVER_DB_NAME.spaceman_objects as sos left join $TSM_SERVER_DB_NAME.nodes nr on (sos.nodeid=nr.nodeid) left join $TSM_SERVER_DB_NAME.filespaces fs on (sos.fsid=fs.fsid) where nr.nodename='$TSM_PROXY_NODE' and fs.fsname='$mountpoint' and state=1 and extobjid=x'$extobjid'")
     rc=$?
+#    echo $extobjid
+    echo $rc
     if [ $rc = 0 -a "$fname"x != "x" ]; then
       echo $mntpoint$fname $(date +%s) 0 >> $tmprecq
       echo "Enqueued dmapi recall for file $mntpoint$fname"
@@ -353,24 +357,36 @@ if [ $numrec -ne 0 ]; then
 
    # loop of list of tape ordered files
    for file in $(ls | grep filelist.ordered.tape); do
-      if [ -f $RECALLDIR/$file ]; then
+      # finding tape name for each list of tape ordered files
+      firstfile=$(head -1 $file | awk '{print $4}')
+      tapeName=$(/usr/local/yamss/bin/yamssGetTapeName $device $firstfile | awk '{print $6}')
+      # first character of Oracle tape names is "T"; first character of IBM tape names is "J"
+      if [[ ${tapeName:0:1} == "T" ]] ; then
+        library="lib1"
+      elif [[ ${tapeName:0:1} == "J" ]] ; then
+        library="lib2"
+      else
+	echo "Unable to find library for tape $tapename"
+      fi
+
+      if [ -f $RECALLDIR/$library/$file ]; then
         # if ordered list for that tape already exists then add to the existing file and reorder
 
         if [ "$file" = "filelist.ordered.tape.00000000" ]; then    # special file for problematic files
            # sort by file name
-           cat $file $RECALLDIR/$file | sort -u -k4 > $file.tmp
+           cat $file $RECALLDIR/$library/$file | sort -u -k4 > $file.tmp
         else
            # sort by tape slot
-           cat $file $RECALLDIR/$file | awk --non-decimal-data 'BEGIN{FS="-"}{printf "%s-%s-%d-%s",$1,$2,"0x"$3,$4; for (i=5;i<=NF;i++) printf "-%s",$i; printf "\n"}' | sort -t- -g -k3 -u | awk 'BEGIN{FS="-"}{printf "%s-%s-%X-%s",$1,$2,$3,$4; for (i=5;i<=NF;i++) printf "-%s",$i; printf "\n"}' > $file.tmp
+           cat $file $RECALLDIR/$library/$file | awk --non-decimal-data 'BEGIN{FS="-"}{printf "%s-%s-%d-%s",$1,$2,"0x"$3,$4; for (i=5;i<=NF;i++) printf "-%s",$i; printf "\n"}' | sort -t- -g -k3 -u | awk 'BEGIN{FS="-"}{printf "%s-%s-%X-%s",$1,$2,$3,$4; for (i=5;i<=NF;i++) printf "-%s",$i; printf "\n"}' > $file.tmp
         fi
 
         # keep the date of the first recall for that tape
-        touch -r $RECALLDIR/$file $file.tmp
-        mv -f $file.tmp $RECALLDIR/$file
+        touch -r $RECALLDIR/$library/$file $file.tmp
+        mv -f $file.tmp $RECALLDIR/$library/$file
       else
-        mv -f $file $RECALLDIR/$file
+        mv -f $file $RECALLDIR/$library/$file
       fi
-
+   
    done
 
    # release lock on recall queue

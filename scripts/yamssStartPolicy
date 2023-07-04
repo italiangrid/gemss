@@ -85,7 +85,7 @@ export hostnam=$(hostname|cut -d. -f1)
              mkdir $tmpdir/premigrate
              mkdir $tmpdir/intragpfs
              echo Performing preparatory scan
-             $mmapplypolicy $mountpoint/$MIGRATE_SCAN_PATH -I prepare -s $tmpdir
+             $mmapplypolicy $mountpoint/$MIGRATE_SCAN_PATH -I prepare -N $MIGRATE_NODE_LIST -s $tmpdir
              rc_1=$?
              mv $tmpdir/mmapplypolicy.*.migrate.TAPE\ MIGRATION* $tmpdir/garbagecollector
              mv $tmpdir/mmapplypolicy.*.premigrate.TAPE\ PREMIGRATION* $tmpdir/premigrate
@@ -118,7 +118,7 @@ export hostnam=$(hostname|cut -d. -f1)
              mkdir $tmpdir/premigrate
              mkdir $tmpdir/intragpfs
              echo Performing preparatory scan
-             $mmapplypolicy $device -i /var/tmp/tapeDirList -I prepare -s $tmpdir
+             $mmapplypolicy $device -i /var/tmp/tapeDirList -I prepare -N $MIGRATE_NODE_LIST -s $tmpdir
              rc_1=$?
              mv $tmpdir/mmapplypolicy.*.migrate.TAPE\ MIGRATION* $tmpdir/garbagecollector
              mv $tmpdir/mmapplypolicy.*.premigrate.TAPE\ PREMIGRATION* $tmpdir/premigrate
@@ -150,7 +150,7 @@ export hostnam=$(hostname|cut -d. -f1)
            mkdir $tmpdir/premigrate
            mkdir $tmpdir/intragpfs
            echo Performing preparatory scan
-           $mmapplypolicy $device -I prepare -s $tmpdir
+           $mmapplypolicy $device -I prepare -N $MIGRATE_NODE_LIST -s $tmpdir
            rc_1=$?
            mv $tmpdir/mmapplypolicy.*.migrate.TAPE\ MIGRATION* $tmpdir/garbagecollector
            mv $tmpdir/mmapplypolicy.*.premigrate.TAPE\ PREMIGRATION* $tmpdir/premigrate
