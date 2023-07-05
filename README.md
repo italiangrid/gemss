@@ -1,3 +1,3 @@
 gemss
 =====
-Tool to interface Storm to TSM.
+Tool to interface StoRM to TSM.
