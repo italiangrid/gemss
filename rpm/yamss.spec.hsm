@@ -1,11 +1,7 @@
 Summary: INFN GEMSS
 Name: gemss-hsm
-Version: 1.9.0
-<<<<<<< HEAD
+Version: 1.10.0
 Release: 1
-=======
-Release: 2
->>>>>>> master
 Source0: %{name}-%{version}.tar.gz
 License: GPL
 Group: CNAF
