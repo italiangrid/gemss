@@ -32,7 +32,7 @@ src/c/yamssRemoveDmAttr
 src/c/yamssRemoveWrapper
 src/c/yamssRm
 src/c/yamssSetDmAttr
-src/c/yamssShowPoolOccupancy
+src/c/yamssShowPoolOccupancy 
 src/c/yamssSigTermUnblock
 src/c/yamssStubbify
 *.class

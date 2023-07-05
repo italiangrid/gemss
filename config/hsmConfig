@@ -1,8 +1,15 @@
 # storm node serving the file system (if any)
 STORM_BACKEND_NODE="xxx"
 
+# storm node implementing the tape rest api (if any)
+STORM_TAPE_NODE="xxx"
+
 # storm recall interface token (mandatory)
 STORM_BACKEND_TOKEN="qqq"
+
+# username and password to access the recall endpoint of storm tape (mandatory if StoRM Tape is used)
+STORM_TAPE_USER="someuser"
+STORM_TAPE_PASSWORD="somepassword"
 
 # migrate node list (comma separated)
 MIGRATE_NODE_LIST="xxx,yyy"

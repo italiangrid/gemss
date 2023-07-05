@@ -1,6 +1,6 @@
 Summary: INFN GEMSS
 Name: gemss-client
-Version: 1.9.0
+Version: 1.10.0
 Release: 1
 Source0: %{name}-%{version}.tar.gz
 License: GPL

@@ -59,10 +59,12 @@ echo $tapeocc $diskocc > $STATDIR/occupancy
 cat $STATDIR/list_all | awk '{print $1,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$16}' > $STATDIR/filelist
 
 if [ "$RUN_POLICY_RECONCILE"x = "yesx" ]; then
-  cat $STATDIR/list_all | awk '$14!="_NULL_" {print $14,$1,$2,$16}' | sort | tr -s '\n' '\0' > $STATDIR/list_reconcile
- $dsmreconcile -o -d -filelist=$STATDIR/list_reconcile $mountpoint
+#  cat $STATDIR/list_all | awk '$14!="_NULL_" {print $14,$1,$2,$16}' | sort | tr -s '\n' '\0' > $STATDIR/list_reconcile
+  cat $STATDIR/list_all | awk '$14!="_NULL_" {print $14,$1,$2,$16}' | sort | tr -s '\n' > $STATDIR/list_reconcile
+# $dsmreconcile -o -d -filelist=$STATDIR/list_reconcile $mountpoint
+  $dsmreconcileGPFS -d $mountpoint
 fi
 
-rm -f $STATDIR/list_all
-rm -f $STATDIR/list_reconcile
+#rm -f $STATDIR/list_all
+#rm -f $STATDIR/list_reconcile
 
