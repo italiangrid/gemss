@@ -36,7 +36,6 @@ make -C $RPM_SOURCE_DIR buildinstall
 /usr/local/yamss/bin/yamssCleanupDMErrorDirectory
 /usr/local/yamss/bin/yamssCommands
 /usr/local/yamss/bin/yamssDirectoryNotify
-/usr/local/yamss/bin/yamssDistribuiteQueueLibraries
 /usr/local/yamss/bin/yamssDrainMigrations
 /usr/local/yamss/bin/yamssDrainRecalls
 /usr/local/yamss/bin/yamssDriveStat
