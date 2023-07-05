@@ -29,16 +29,6 @@ make -C $RPM_SOURCE_DIR buildinstall
 /etc/init.d/yamssmonitor
 /etc/profile.d/yamss.csh
 /etc/profile.d/yamss.sh
-/usr/local/yamss/bin/cert256.arm
-/usr/local/yamss/bin/cert.crl
-/usr/local/yamss/bin/cert.kdb
-/usr/local/yamss/bin/cert.rdb
-/usr/local/yamss/bin/cert.sth
-/usr/local/yamss/bin/citScanOutput.xml
-/usr/local/yamss/bin/dsmerror.log
-/usr/local/yamss/bin/dsmffdc.log
-/usr/local/yamss/bin/dsminstr.log
-/usr/local/yamss/bin/dsminstr.log.lock
 /usr/local/yamss/bin/ng
 /usr/local/yamss/bin/yamssAbortDmSession
 /usr/local/yamss/bin/yamssCheckDefunctPolicy
@@ -97,7 +87,7 @@ make -C $RPM_SOURCE_DIR buildinstall
 /usr/local/yamss/bin/yamssUpdateDamagedFiles
 /usr/local/yamss/bin/yamssUpdateVolumesInErrorState
 /usr/local/yamss/bin/yamssWatchdog
-/usr/local/yamss/lib/db2jcc.jar
+/usr/local/yamss/lib/db2jcc4.jar
 /usr/local/yamss/lib/nailgun-0.7.1.jar
 /usr/local/yamss/lib/yamssDB2Query.class
 /usr/local/yamss/lib/yamssDB2Update.class
