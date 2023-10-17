@@ -74,6 +74,18 @@ if [ "$RECALL_USE_STORM"x = "1x" ]; then
   let numlrec=$numlrec+$numtakeover
 fi
 
+if [ "$STORM_TAPE_NODE"x != "x" ]; then
+  numtakeover_from_stormtape=$($yamssWatchdog -t 60 $curl -k -s -S -u "$STORM_TAPE_USER:$STORM_TAPE_PASSWORD" -X GET https://$STORM_TAPE_NODE/recalltable/cardinality/tasks/readyTakeOver)
+  # if numtakeover_from_stormtape is empty storm is probably offline
+  if [ "$numtakeover_from_stormtape"x = "x" ]; then
+     echo "Error: StoRM Tape service not responding"
+     # do not use StoRM Tape for the remainder of the life of this process
+     STORM_TAPE_NODE=
+     numtakeover_from_stormtape=0
+  fi
+  let numlrec=$numlrec+$numtakeover_from_stormtape
+fi
+
 if [ "$numlrec"x = "0x" ]; then
    exit 0
 fi
@@ -129,58 +141,69 @@ for filewrapper in $(ls $DMRECALLDIR); do
   fi
 done
 
-# Get files from storm recall table
+# Get files from storm recall table(s)
+tmptasks=$(mktemp /tmp/tasks.XXXXXXX)
+
 if [ "$RECALL_USE_STORM"x = "1x" -a "$numtakeover"x != "0x" ]; then
-
    # takes over tasks from StoRM recall table
-   $yamssWatchdog -t 60 $curl -s -S -H "Content-Type:text/plain" -H "Token:$STORM_BACKEND_TOKEN" -X PUT -d first=$RECALL_STORM_DEQUEUE_MAX http://$STORM_BACKEND_NODE:9998/recalltable/tasks 2>/dev/null | tr '#' '\n' | tr "{" " " | tr "}" " " | while read -r myline; do
-     taskid=$(echo "$myline"|awk '{print $1}')
-     fname=$(echo "$myline"|awk '{print $5}')
-     cattr=$($attr -q -g TSMRecT $fname 2>/dev/null)
-
-     # check if file is already on disk. This should never happen... but who knows
-     sbss=$(ls -ls $fname|awk '{print $1,$6}')
-     blks=$(echo $sbss|awk '{print $1}')
-     size=$(echo $sbss|awk '{print $2}')
-     fstatus=$($yamssFileStatus $fname)
-     let ress=$blks*1024
-     if [ "$fstatus"x = "onlinex" ]; then
-        echo "Warning! A recall was ordered for file $fname but it is already on disk. Allocated size is $ress bytes while size is $size"
-        continue
-     fi
-
-     # if the file was already under recall, append taskid to the existing extended attribute
-     if [ "$cattr"x != x ]; then
-        nattr=$cattr","$taskid
-     else
-        nattr=$taskid
-     fi
-
-     # should check whether nattr is too long (1022 bytes), to be fixed
-     echo "Setting extended attribute with taskid list $nattr on file $fname"
-     $attr -q -s TSMRecT -V $nattr $fname 2>/dev/null
-
-
-     # insert task into local recall queue
-     nfile=$(readlink -f "$fname")
-     if [ $? = 0 ]; then
-       # check if file is from another filesystem (to be improved)
-       effmnt=$(df -P $nfile | tail -n1 | awk '{print $6}')
-       if [ "$effmnt"x != "$mountpoint"x ]; then
-          # submit file recall to the other filesystem, but acquire lock first
-          lockfile -1 -l600 $effmnt/system/YAMSS_LOCK/recall.cross.lock
-          echo "Inserting file $fname in cross recall list"
-          echo $nfile $(date +%s) 0 >> $effmnt/system/YAMSS_RECALL_CROSS/recall.cross
-          rm -f $effmnt/system/YAMSS_LOCK/recall.cross.lock
-       else 
-         echo $nfile $(date +%s) 0 >> $tmprecq
-       fi
-     fi
-
-   done
-
+   $yamssWatchdog -t 60 $curl -s -S -H "Content-Type:text/plain" -H "Token:$STORM_BACKEND_TOKEN" -X PUT -d first=$RECALL_STORM_DEQUEUE_MAX http://$STORM_BACKEND_NODE:9998/recalltable/tasks 2>/dev/null | tr '#' '\n' | tr "{" " " | tr "}" " " | awk '{print $1,$5}' >> ${tmptasks}
 fi
 
+if [ "$STORM_TAPE_NODE"x != "x" -a "$numtakeover_from_stormtape"x != "0x" ]; then
+   # takes over tasks from StoRM Tape
+   $yamssWatchdog -t 60 $curl -k -s -S -H "Content-Type:text/plain" -u "$STORM_TAPE_USER:$STORM_TAPE_PASSWORD" -X PUT -d first=$RECALL_STORM_DEQUEUE_MAX https://$STORM_TAPE_NODE/recalltable/tasks 2>/dev/null >> ${tmptasks}
+fi
+
+cat ${tmptasks} | while read -r myline; do
+  taskid=$(echo "$myline"|awk '{print $1}')
+  fname=$(echo "$myline"|awk '{print $2}')
+  cattr=$($attr -q -g TSMRecT $fname 2>/dev/null)
+
+  # check if file is already on disk. This should never happen... but who knows
+  sbss=$(ls -ls $fname|awk '{print $1,$6}')
+  blks=$(echo $sbss|awk '{print $1}')
+  size=$(echo $sbss|awk '{print $2}')
+  fstatus=$($yamssFileStatus $fname)
+  let ress=$blks*1024
+  if [ "$fstatus"x = "onlinex" ]; then
+    echo "Warning! A recall was ordered for file $fname but it is already on disk. Allocated size is $ress bytes while size is $size"
+    continue
+  fi
+
+  # the storm tape rest api doesn't need to be notified about failures
+  if [ "$taskid"x != "unusedx" ]; then
+    # if the file was already under recall, append taskid to the existing extended attribute
+    if [ "$cattr"x != x ]; then
+        nattr=$cattr","$taskid
+    else
+        nattr=$taskid
+    fi
+  fi
+
+  # should check whether nattr is too long (1022 bytes), to be fixed
+  echo "Setting extended attribute with taskid list $nattr on file $fname"
+  $attr -q -s TSMRecT -V $nattr $fname 2>/dev/null
+
+
+  # insert task into local recall queue
+  nfile=$(readlink -f "$fname")
+  if [ $? = 0 ]; then
+    # check if file is from another filesystem (to be improved)
+    effmnt=$(df -P $nfile | tail -n1 | awk '{print $6}')
+    if [ "$effmnt"x != "$mountpoint"x ]; then
+      # submit file recall to the other filesystem, but acquire lock first
+      lockfile -1 -l600 $effmnt/system/YAMSS_LOCK/recall.cross.lock
+      echo "Inserting file $fname in cross recall list"
+      echo $nfile $(date +%s) 0 >> $effmnt/system/YAMSS_RECALL_CROSS/recall.cross
+      rm -f $effmnt/system/YAMSS_LOCK/recall.cross.lock
+    else 
+      echo $nfile $(date +%s) 0 >> $tmprecq
+    fi
+  fi
+
+done
+
+rm ${tmptasks}
 
 # Acquire lock on recall queue
 lockfile -1 -l600 $LOCKDIR/recall.queue.lock
