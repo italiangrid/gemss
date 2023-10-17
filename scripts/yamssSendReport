@@ -123,8 +123,8 @@ if [ "$HOURNOW"x = "$REPORT_DAILY_HOUR"x -a "$DAYNOW"x != "$DAYLAST"x ]; then
        printf "Total %s %s\n" $total_used_sp $total_quota_sp
      } | column -t
      echo
-     total_available=$(df /dev/$device | egrep -v Mounted | awk '{print $2*1024./2**40}')
-     total_used=$(df /dev/$device | egrep -v Mounted | awk '{print $3*1024./2**40}')
+     total_available=$(df /storage/$device | egrep -v Mounted | awk '{print $2*1024./2**40}')
+     total_used=$(df /storage/$device | egrep -v Mounted | awk '{print $3*1024./2**40}')
      echo Filesystem occupancy
      printf "used(TiB) available(TiB)\n %s %s\n" $total_used $total_available | column -t
      echo
