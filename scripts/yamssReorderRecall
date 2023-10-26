@@ -77,7 +77,7 @@ fi
 if [ "$STORM_TAPE_NODE"x != "x" ]; then
   numtakeover_from_stormtape=$($yamssWatchdog -t 60 $curl -k -s -S -u "$STORM_TAPE_USER:$STORM_TAPE_PASSWORD" -X GET https://$STORM_TAPE_NODE/recalltable/cardinality/tasks/readyTakeOver)
   # if numtakeover_from_stormtape is empty storm is probably offline
-  if [ "$numtakeover_from_stormtape"x = "x" ]; then
+  if [ -z "${numtakeover_from_stormtape}" -o -n "${numtakeover_from_stormtape//[0-9]}" ]; then
      echo "Error: StoRM Tape service not responding"
      # do not use StoRM Tape for the remainder of the life of this process
      STORM_TAPE_NODE=
@@ -178,11 +178,10 @@ cat ${tmptasks} | while read -r myline; do
     else
         nattr=$taskid
     fi
+    # should check whether nattr is too long (1022 bytes), to be fixed
+    echo "Setting extended attribute with taskid list $nattr on file $fname"
+    $attr -q -s TSMRecT -V $nattr $fname 2>/dev/null
   fi
-
-  # should check whether nattr is too long (1022 bytes), to be fixed
-  echo "Setting extended attribute with taskid list $nattr on file $fname"
-  $attr -q -s TSMRecT -V $nattr $fname 2>/dev/null
 
 
   # insert task into local recall queue
