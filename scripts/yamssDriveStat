@@ -60,6 +60,8 @@ tmpfile=$(mktemp /tmp/mdstat.XXXXXX)
 $dsmadmc -id=$TSM_ID -passw=$TSM_PASSWORD -tabdelimited "q actlog begindate=$begindate begintime=$begintime enddate=$enddate endtime=$endtime" >$tmpfile 2>&1 
 
 #cat $tmpfile | egrep "ANR8468I|ANR8337I" | egrep -v "ANR8468I ECARTRIDGE|ANR8337I ECARTRIDGE" | awk '{print $1,$2,$7 $11,$10,$14}' | tr ")" " " | while read -r myline; do
+
+#Avoid double counting  of mount and dismount drives
 cat $tmpfile | egrep "ANR8468I|ANR8337I" | egrep -v "ANR8468I ECARTRIDGE|ANR8337I ECARTRIDGE|ANR8468I 3592|ANR8337I 3592" | awk '{print $1,$2,$7 $11,$10,$14}' | tr ")" " " | while read -r myline; do
    server=$(echo $myline | awk '{print $3}')
    if [ "$srv"x != "$server"x ]; then
@@ -80,5 +82,6 @@ cat $tmpfile | egrep "ANR8468I|ANR8337I" | egrep -v "ANR8468I ECARTRIDGE|ANR8337
    fi
 done
 
-#rm -f $tmpfile
+#Removing tmp file because the number are fed to yammssManager
+rm -f $tmpfile
 
